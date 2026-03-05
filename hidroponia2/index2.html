@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Lectura Firebase</title>
+</head>
+<body>
+
+  <h2>Datos desde Firebase</h2>
+
+  <p>Temperatura agua: <span id="waterTemp">--</span> °C</p>
+  <p>Temperatura ambiente: <span id="dhtTemp">--</span> °C</p>
+  <p>Humedad: <span id="hum">--</span> %</p>
+  <p>pH: <span id="ph">--</span></p>
+  <p>TDS: <span id="tds">--</span></p>
+  <p>EC: <span id="ec">--</span></p>
+  <p>Nivel: <span id="nivel">--</span></p>
+
+  <hr>
+
+  <h2>Control de Bombas</h2>
+
+  <button onclick="setBomba(1,1)">Bomba 1 ON</button>
+  <button onclick="setBomba(1,0)">Bomba 1 OFF</button>
+  <br><br>
+
+  <button onclick="setBomba(2,1)">Bomba 2 ON</button>
+  <button onclick="setBomba(2,0)">Bomba 2 OFF</button>
+  <br><br>
+
+  <button onclick="setBomba(3,1)">Bomba 3 ON</button>
+  <button onclick="setBomba(3,0)">Bomba 3 OFF</button>
+
+  <!-- 🔥 TODO EN UN SOLO SCRIPT -->
+  <script type="module">
+    console.log("JS cargado ✔");
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXAal12oFlxKZ81PlaDNnar_y2-DiZRlU",
+      authDomain: "esp32-a7ac9.firebaseapp.com",
+      databaseURL: "https://esp32-a7ac9-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "esp32-a7ac9",
+      storageBucket: "esp32-a7ac9.firebasestorage.app",
+      messagingSenderId: "312730525959",
+      appId: "1:312730525959:web:dae44f28a4149dcee165a2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    // ====== LECTURA DE SENSORES ======
+    const sensoresRef = ref(db, "sensores");
+
+    onValue(sensoresRef, (snapshot) => {
+      const d = snapshot.val();
+      console.log("Sensores:", d);
+      if (!d) return;
+
+      document.getElementById("waterTemp").innerText = d.waterTemp;
+      document.getElementById("dhtTemp").innerText   = d.dhtTemp;
+      document.getElementById("hum").innerText       = d.hum;
+      document.getElementById("ph").innerText        = d.ph;
+      document.getElementById("tds").innerText       = d.tds;
+      document.getElementById("ec").innerText        = d.ec;
+      document.getElementById("nivel").innerText     = d.nivel;
+    });
+
+    // ====== CONTROL DE BOMBAS ======
+    window.setBomba = (num, estado) => {
+      console.log(`Bomba ${num}:`, estado);
+      set(ref(db, "bombas/bomba" + num), estado);
+    };
+  </script>
+
+</body>
+</html>

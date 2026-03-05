@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Monitor Hidroponía - Arduino</title>
+<link rel="stylesheet" href="">
+</head>
+<body>
+
+<h2>Lecturas en Tiempo Real del Arduino</h2>
+
+<div class="grid">
+
+  <div class="card">
+    <div class="titulo">pH</div>
+    <div id="ph" class="valor">--</div>
+  </div>
+
+  <div class="card">
+    <div class="titulo">Temperatura</div>
+    <div id="temp" class="valor">-- °C</div>
+  </div>
+
+  <div class="card">
+    <div class="titulo">Humedad</div>
+    <div id="hum" class="valor">-- %</div>
+  </div>
+
+  <div class="card">
+    <div class="titulo">Nivel de Agua</div>
+    <div id="nivel" class="valor">--</div>
+  </div>
+
+</div>
+
+<script>
+const URL = "http://192.168.100.8/data";  // ← tu Arduino
+
+async function cargar(){
+  try {
+    const r = await fetch(URL, {cache:"no-store"});
+    const j = await r.json();
+
+    // --- pH ---
+    let ph = document.getElementById("ph");
+    ph.textContent = j.ph;
+    ph.className = "valor " + (j.ph < 5.5 || j.ph > 8 ? "alerta" : "ok");
+
+    // --- temperatura ---
+    let t = document.getElementById("temp");
+    t.textContent = j.temp + " °C";
+    t.className = "valor " + (j.temp > 35 || j.temp < 5 ? "alerta" : "ok");
+
+    // --- humedad ---
+    let h = document.getElementById("hum");
+    h.textContent = j.hum + " %";
+    h.className = "valor ok";
+
+    // --- nivel ---
+    let n = document.getElementById("nivel");
+    n.textContent = j.nivel;
+    n.className = "valor " + (j.nivel === "BAJO" ? "alerta" : "ok");
+
+  } catch(e){
+    console.log("Error fetch:", e);
+  }
+}
+
+// actualiza cada 1 segundo
+setInterval(cargar, 1000);
+cargar();
+</script>
+
+</body>
+</html>

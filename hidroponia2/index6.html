@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sensores en Tiempo Real</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 840px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 2rem; }
+    h1 { font-size: 1.8rem; font-weight: 700; color: #0f172a; }
+    .subtitle { color: #64748b; font-size: 0.95rem; margin-top: 0.25rem; }
+
+    /* Tarjetas de sensores */
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.25rem;
+    }
+    .sensor-item {
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .temp-agua { border-top: 4px solid #3b82f6; }
+    .temp-amb  { border-top: 4px solid #60a5fa; }
+    .humedad   { border-top: 4px solid #10b981; }
+    .ph        { border-top: 4px solid #f97316; }
+    .tds       { border-top: 4px solid #8b5cf6; }
+    .ec        { border-top: 4px solid #ec4899; }
+    .nivel     { border-top: 4px solid #0ea5e9; }
+    .icon-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+    .value-wrapper {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0f172a;
+      transition: all 0.3s ease-in-out;
+    }
+    .unit { font-size: 0.85rem; color: #94a3b8; margin-left: 0.25rem; }
+    .alert-high { color: #ef4444 !important; }
+
+    /* Modal de alarma */
+    #ph-alert-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 90%;
+      width: 400px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .modal-content h2 {
+      color: #ef4444;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+    .modal-content p {
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+    .btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .btn:hover {
+      background: #dc2626;
+    }
+
+    @media (max-width: 600px) {
+      .sensor-grid { grid-template-columns: 1fr; }
+      body { padding: 1.5rem 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Monitoreo de Sensores</h1>
+      <p class="subtitle">Datos en tiempo real desde Firebase</p>
+    </header>
+
+    <div class="sensor-grid">
+      <div class="sensor-item temp-agua">
+        <div class="icon-label"><i class="fas fa-water"></i> Temperatura Agua</div>
+        <div class="value-wrapper"><span id="waterTemp">--</span><span class="unit">°C</span></div>
+      </div>
+      <div class="sensor-item temp-amb">
+        <div class="icon-label"><i class="fas fa-thermometer-half"></i> Temp. Ambiente</div>
+        <div class="value-wrapper"><span id="dhtTemp">--</span><span class="unit">°C</span></div>
+      </div>
+      <div class="sensor-item humedad">
+        <div class="icon-label"><i class="fas fa-tint"></i> Humedad</div>
+        <div class="value-wrapper"><span id="hum">--</span><span class="unit">%</span></div>
+      </div>
+      <div class="sensor-item ph">
+        <div class="icon-label"><i class="fas fa-vial"></i> pH</div>
+        <div class="value-wrapper" id="ph">--</div>
+      </div>
+      <div class="sensor-item tds">
+        <div class="icon-label"><i class="fas fa-filter"></i> TDS</div>
+        <div class="value-wrapper"><span id="tds">--</span><span class="unit">ppm</span></div>
+      </div>
+      <div class="sensor-item ec">
+        <div class="icon-label"><i class="fas fa-bolt"></i> EC</div>
+        <div class="value-wrapper"><span id="ec">--</span><span class="unit">mS/cm</span></div>
+      </div>
+      <div class="sensor-item nivel">
+        <div class="icon-label"><i class="fas fa-ruler-vertical"></i> Nivel</div>
+        <div class="value-wrapper"><span id="nivel">--</span><span class="unit">cm</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de alarma -->
+  <div id="ph-alert-modal">
+    <div class="modal-content">
+      <h2>⚠️ ¡Alerta de pH Alto!</h2>
+      <p>El nivel de pH del agua ha superado el límite seguro.</p>
+      <p><strong id="ph-alert-value">--</strong> (máximo recomendado: 8.0)</p>
+      <button class="btn" onclick="closePHAlert()">Cerrar y silenciar</button>
+    </div>
+  </div>
+
+  <!-- Sonido de alarma (silencioso por defecto, se activa solo si hay alerta) -->
+  <audio id="alarm-sound" preload="auto">
+    <source src="data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" type="audio/mpeg">
+  </audio>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXAal12oFlxKZ81PlaDNnar_y2-DiZRlU",
+      authDomain: "esp32-a7ac9.firebaseapp.com",
+      databaseURL: "https://esp32-a7ac9-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "esp32-a7ac9",
+      storageBucket: "esp32-a7ac9.firebasestorage.app",
+      messagingSenderId: "312730525959",
+      appId: "1:312730525959:web:dae44f28a4149dcee165a2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const sensoresRef = ref(db, "sensores");
+
+    const PH_MAX = 8.0;
+    let phAlertActive = false;
+    let alarmInterval = null;
+
+    const alarmSound = document.getElementById("alarm-sound");
+    const modal = document.getElementById("ph-alert-modal");
+    const phAlertValueEl = document.getElementById("ph-alert-value");
+
+    function triggerPHAlarm(value) {
+      if (phAlertActive) return;
+
+      phAlertActive = true;
+      phAlertValueEl.textContent = value;
+
+      // Mostrar modal
+      modal.style.display = "flex";
+
+      // Reproducir sonido brevemente (3 pitidos)
+      let count = 0;
+      alarmInterval = setInterval(() => {
+        if (count < 3) {
+          alarmSound.currentTime = 0;
+          alarmSound.play().catch(e => console.log("Audio play blocked:", e));
+          count++;
+        } else {
+          clearInterval(alarmInterval);
+          alarmInterval = null;
+        }
+      }, 1200);
+    }
+
+    function closePHAlert() {
+      modal.style.display = "none";
+      phAlertActive = false;
+      if (alarmInterval) {
+        clearInterval(alarmInterval);
+        alarmInterval = null;
+      }
+    }
+
+    // Cerrar alarma con Escape
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && phAlertActive) {
+        closePHAlert();
+      }
+    });
+
+    onValue(sensoresRef, (snapshot) => {
+      const d = snapshot.val();
+      if (!d) return;
+
+      const update = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = (val != null && !isNaN(Number(val))) ? Number(val).toFixed(1) : "--";
+      };
+
+      update("waterTemp", d.waterTemp);
+      update("dhtTemp", d.dhtTemp);
+      update("hum", d.hum);
+      update("tds", d.tds);
+      update("ec", d.ec);
+      update("nivel", d.nivel);
+
+      // Manejo de pH
+      const phEl = document.getElementById("ph");
+      const rawPH = d.ph;
+      const phNum = parseFloat(rawPH);
+
+      if (!isNaN(phNum)) {
+        const displayPH = phNum.toFixed(2);
+        phEl.textContent = displayPH;
+
+        if (phNum > PH_MAX) {
+          phEl.classList.add("alert-high");
+          triggerPHAlarm(displayPH);
+        } else {
+          phEl.classList.remove("alert-high");
+          if (phAlertActive) closePHAlert();
+        }
+      } else {
+        phEl.textContent = "--";
+        phEl.classList.remove("alert-high");
+        if (phAlertActive) closePHAlert();
+      }
+    });
+  </script>
+</body>
+</html>

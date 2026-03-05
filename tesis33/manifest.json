@@ -1,0 +1,9 @@
+{
+  "name": "Panel Hidropónico",
+  "short_name": "HidroApp",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F5F5F8",
+  "theme_color": "#198754",
+  "orientation": "portrait"
+}

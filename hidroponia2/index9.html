@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sensores Tomate - Control</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 840px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 1.5rem; }
+    h1 { font-size: 1.8rem; font-weight: 700; color: #0f172a; }
+    .subtitle { color: #64748b; font-size: 0.95rem; margin-top: 0.25rem; }
+
+    /* Controles manuales */
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .control-btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .control-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-auto { background: #94a3b8; color: white; }
+    .btn-manual { background: #3b82f6; color: white; }
+    .btn-on { background: #10b981; color: white; }
+    .btn-off { background: #ef4444; color: white; }
+
+    /* Tarjetas de sensores */
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.25rem;
+    }
+    .sensor-item {
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .temp-agua { border-top: 4px solid #3b82f6; }
+    .temp-amb  { border-top: 4px solid #60a5fa; }
+    .humedad   { border-top: 4px solid #10b981; }
+    .ph        { border-top: 4px solid #f97316; }
+    .tds       { border-top: 4px solid #8b5cf6; }
+    .ec        { border-top: 4px solid #ec4899; }
+    .nivel     { border-top: 4px solid #0ea5e9; }
+    .icon-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+    .value-wrapper {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0f172a;
+      transition: all 0.3s ease-in-out;
+    }
+    .unit { font-size: 0.85rem; color: #94a3b8; margin-left: 0.25rem; }
+    .alert-low { color: #f59e0b !important; }
+    .alert-high { color: #ef4444 !important; }
+
+    /* Notificación tipo toast */
+    #toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 320px;
+    }
+    .toast {
+      background: #fff;
+      border-left: 4px solid #f59e0b;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      animation: slideIn 0.3s ease-out forwards;
+    }
+    .toast-icon { font-size: 24px; color: #f59e0b; margin-top: 2px; }
+    .toast-title { font-weight: 600; color: #1e293b; margin-bottom: 4px; }
+    .toast-message { font-size: 0.9rem; color: #64748b; }
+    .toast-close {
+      background: none; border: none; font-size: 18px; cursor: pointer;
+      color: #94a3b8; width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .toast-close:hover { color: #1e293b; }
+    @keyframes slideIn {
+      from { transform: translateX(120%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @media (max-width: 600px) {
+      .sensor-grid { grid-template-columns: 1fr; }
+      body { padding: 1.5rem 0.8rem; }
+      #toast-container {
+        top: 16px; right: 16px; left: 16px; max-width: calc(100% - 32px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Monitoreo y Control - Cultivo de Tomate</h1>
+      <p class="subtitle">Datos en tiempo real y control remoto</p>
+    </header>
+
+    <!-- Controles manuales -->
+    <div class="controls">
+      <button id="btnAuto" class="control-btn btn-auto">Modo Automático</button>
+      <button id="btnManual" class="control-btn btn-manual">Modo Manual</button>
+      <button id="btnBombaOn" class="control-btn btn-on" disabled>Encender Bomba</button>
+      <button id="btnBombaOff" class="control-btn btn-off" disabled>Apagar Bomba</button>
+    </div>
+
+    <!-- Sensores -->
+    <div class="sensor-grid">
+      <div class="sensor-item temp-agua">
+        <div class="icon-label"><i class="fas fa-water"></i> Temperatura Agua</div>
+        <div class="value-wrapper"><span id="waterTemp">--</span><span class="unit">°C</span></div>
+      </div>
+      <div class="sensor-item temp-amb">
+        <div class="icon-label"><i class="fas fa-thermometer-half"></i> Temp. Ambiente</div>
+        <div class="value-wrapper"><span id="dhtTemp">--</span><span class="unit">°C</span></div>
+      </div>
+      <div class="sensor-item humedad">
+        <div class="icon-label"><i class="fas fa-tint"></i> Humedad</div>
+        <div class="value-wrapper"><span id="hum">--</span><span class="unit">%</span></div>
+      </div>
+      <div class="sensor-item ph">
+        <div class="icon-label"><i class="fas fa-vial"></i> pH</div>
+        <div class="value-wrapper" id="ph">--</div>
+      </div>
+      <div class="sensor-item tds">
+        <div class="icon-label"><i class="fas fa-filter"></i> TDS</div>
+        <div class="value-wrapper"><span id="tds">--</span><span class="unit">ppm</span></div>
+      </div>
+      <div class="sensor-item ec">
+        <div class="icon-label"><i class="fas fa-bolt"></i> EC</div>
+        <div class="value-wrapper"><span id="ec">--</span><span class="unit">mS/cm</span></div>
+      </div>
+      <div class="sensor-item nivel">
+        <div class="icon-label"><i class="fas fa-ruler-vertical"></i> Nivel</div>
+        <div class="value-wrapper"><span id="nivel">--</span><span class="unit">cm</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXAal12oFlxKZ81PlaDNnar_y2-DiZRlU",
+      authDomain: "esp32-a7ac9.firebaseapp.com",
+      databaseURL: "https://esp32-a7ac9-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "esp32-a7ac9",
+      storageBucket: "esp32-a7ac9.firebasestorage.app",
+      messagingSenderId: "312730525959",
+      appId: "1:312730525959:web:dae44f28a4149dcee165a2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const sensoresRef = ref(db, "sensores");
+
+    const ranges = {
+      ph: { min: 5.5, max: 6.5, unit: "", name: "pH" },
+      ec: { min: 2.0, max: 3.5, unit: "mS/cm", name: "Conductividad (EC)" },
+      tds: { min: 1400, max: 2500, unit: "ppm", name: "TDS" },
+      waterTemp: { min: 18, max: 24, unit: "°C", name: "Temperatura del agua" },
+      dhtTemp: { min: 15, max: 28, unit: "°C", name: "Temperatura ambiente" },
+      hum: { min: 60, max: 70, unit: "%", name: "Humedad relativa" }
+    };
+
+    let currentData = null;
+    let modoActual = "auto";
+
+    // === FUNCIONES ===
+    function showToast(title, message, type = "warning") {
+      const container = document.getElementById("toast-container");
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      const color = type === "error" ? "#ef4444" : type === "warning" ? "#f59e0b" : "#10b981";
+      toast.style.borderLeftColor = color;
+      toast.innerHTML = `
+        <div class="toast-icon"><i class="fas fa-exclamation-triangle" style="color:${color}"></i></div>
+        <div class="toast-content">
+          <div class="toast-title">${title}</div>
+          <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close">&times;</button>
+      `;
+      container.appendChild(toast);
+      toast.querySelector(".toast-close").onclick = () => toast.remove();
+      setTimeout(() => toast.remove(), 8000);
+    }
+
+    function updateDisplay(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (value == null || isNaN(value)) {
+        el.textContent = "--";
+        return;
+      }
+      const isPercent = ["hum"].includes(id);
+      el.textContent = isPercent ? Math.round(value) : Number(value).toFixed(2);
+    }
+
+    function enviarControlFirebase(ruta, valor) {
+      fetch(`https://esp32-a7ac9-default-rtdb.europe-west1.firebasedatabase.app/controles/${ruta}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(valor)
+      }).catch(err => console.error("Error al enviar control:", err));
+    }
+
+    function checkPersistentAlerts() {
+      if (!currentData || !currentData.alerts) return;
+      for (const key in ranges) {
+        if (currentData.alerts[key]) {
+          const value = currentData[key];
+          const range = ranges[key];
+          const msg = `${range.name} sigue fuera de rango (${value} ${range.unit}). Rango ideal para tomate: ${range.min}–${range.max} ${range.unit}.`;
+          showToast(`🔁 Alerta persistente: ${range.name}`, msg, value > range.max ? "error" : "warning");
+        }
+      }
+    }
+
+    // === EVENTOS DE BOTONES ===
+    document.getElementById("btnAuto").onclick = () => {
+      modoActual = "auto";
+      enviarControlFirebase("mode", "auto");
+      document.getElementById("btnBombaOn").disabled = true;
+      document.getElementById("btnBombaOff").disabled = true;
+    };
+
+    document.getElementById("btnManual").onclick = () => {
+      modoActual = "manual";
+      enviarControlFirebase("mode", "manual");
+      document.getElementById("btnBombaOn").disabled = false;
+      document.getElementById("btnBombaOff").disabled = false;
+    };
+
+    document.getElementById("btnBombaOn").onclick = () => {
+      enviarControlFirebase("bomba", true);
+    };
+
+    document.getElementById("btnBombaOff").onclick = () => {
+      enviarControlFirebase("bomba", false);
+    };
+
+    // === ESCUCHAR DATOS EN TIEMPO REAL ===
+    onValue(sensoresRef, (snapshot) => {
+      const d = snapshot.val();
+      if (!d) return;
+      currentData = d;
+
+      updateDisplay("waterTemp", d.waterTemp);
+      updateDisplay("dhtTemp", d.dhtTemp);
+      updateDisplay("hum", d.hum);
+      updateDisplay("ph", d.ph);
+      updateDisplay("tds", d.tds);
+      updateDisplay("ec", d.ec);
+      updateDisplay("nivel", d.nivel);
+
+      // Actualizar colores
+      for (const key of Object.keys(ranges)) {
+        const el = document.getElementById(key);
+        const wrapper = el?.closest('.value-wrapper');
+        if (wrapper) {
+          wrapper.classList.remove("alert-low", "alert-high");
+          if (d.alerts?.[key]) {
+            const val = d[key];
+            const r = ranges[key];
+            if (val < r.min) wrapper.classList.add("alert-low");
+            else if (val > r.max) wrapper.classList.add("alert-high");
+          }
+        }
+      }
+    });
+
+    // === VERIFICAR ALERTAS PERSISTENTES CADA MINUTO ===
+    setInterval(checkPersistentAlerts, 60000);
+  </script>
+</body>
+</html>

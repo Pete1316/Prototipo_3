@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sensores en Tiempo Real</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      padding: 2rem 1rem;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 840px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .subtitle {
+      color: #64748b;
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .sensor-item {
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      transition: transform 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sensor-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    }
+
+    /* Colores por tipo */
+    .temp-agua { border-top: 4px solid #3b82f6; }   /* azul */
+    .temp-amb { border-top: 4px solid #60a5fa; }    /* azul claro */
+    .humedad  { border-top: 4px solid #10b981; }    /* verde */
+    .ph       { border-top: 4px solid #f97316; }    /* naranja */
+    .tds      { border-top: 4px solid #8b5cf6; }    /* violeta */
+    .ec       { border-top: 4px solid #ec4899; }    /* rosa */
+    .nivel    { border-top: 4px solid #0ea5e9; }    /* cyan */
+
+    .icon-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+
+    .value-wrapper {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0f172a;
+      transition: all 0.3s ease-in-out;
+    }
+
+    .unit {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-left: 0.25rem;
+    }
+
+    /* Alertas (ejemplo básico) */
+    .alert-low,
+    .alert-high {
+      color: #ef4444 !important;
+    }
+
+    @media (max-width: 600px) {
+      .sensor-grid {
+        grid-template-columns: 1fr;
+      }
+      body {
+        padding: 1.5rem 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Monitoreo de Sensores</h1>
+      <p class="subtitle">Datos en tiempo real desde Firebase</p>
+    </header>
+
+    <div class="sensor-grid">
+      <div class="sensor-item temp-agua">
+        <div class="icon-label"><i class="fas fa-water"></i> Temperatura Agua</div>
+        <div class="value-wrapper"><span id="waterTemp">--</span><span class="unit">°C</span></div>
+      </div>
+      <div class="sensor-item temp-amb">
+        <div class="icon-label"><i class="fas fa-thermometer-half"></i> Temp. Ambiente</div>
+        <div class="value-wrapper"><span id="dhtTemp">--</span><span class="unit">°C</span></div>
+      </div>
+      <div class="sensor-item humedad">
+        <div class="icon-label"><i class="fas fa-tint"></i> Humedad</div>
+        <div class="value-wrapper"><span id="hum">--</span><span class="unit">%</span></div>
+      </div>
+      <div class="sensor-item ph">
+        <div class="icon-label"><i class="fas fa-vial"></i> pH</div>
+        <div class="value-wrapper" id="ph">--</div>
+      </div>
+      <div class="sensor-item tds">
+        <div class="icon-label"><i class="fas fa-filter"></i> TDS</div>
+        <div class="value-wrapper"><span id="tds">--</span><span class="unit">ppm</span></div>
+      </div>
+      <div class="sensor-item ec">
+        <div class="icon-label"><i class="fas fa-bolt"></i> EC</div>
+        <div class="value-wrapper"><span id="ec">--</span><span class="unit">mS/cm</span></div>
+      </div>
+      <div class="sensor-item nivel">
+        <div class="icon-label"><i class="fas fa-ruler-vertical"></i> Nivel</div>
+        <div class="value-wrapper"><span id="nivel">--</span><span class="unit">cm</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔥 Firebase -->
+   <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBXAal12oFlxKZ81PlaDNnar_y2-DiZRlU",
+    authDomain: "esp32-a7ac9.firebaseapp.com",
+    databaseURL: "https://esp32-a7ac9-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "esp32-a7ac9",
+    storageBucket: "esp32-a7ac9.firebasestorage.app",
+    messagingSenderId: "312730525959",
+    appId: "1:312730525959:web:dae44f28a4149dcee165a2"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const sensoresRef = ref(db, "sensores");
+
+  // Rangos de alerta
+  const PH_MAX = 8.0;
+  let phAlertActive = false; // Evita notificaciones repetidas
+
+  // Función para mostrar notificación
+  function showPHAlert(value) {
+    if (!("Notification" in window)) {
+      console.warn("Este navegador no soporta notificaciones.");
+      return;
+    }
+
+    // Solicitar permiso si es necesario
+    if (Notification.permission === "default") {
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          new Notification("⚠️ Alerta de pH alto", {
+            body: `El pH del agua es ${value} (máximo recomendado: ${PH_MAX}).`,
+            icon: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png" // opcional
+          });
+        }
+      });
+    } else if (Notification.permission === "granted") {
+      new Notification("⚠️ Alerta de pH alto", {
+        body: `El pH del agua es ${value} (máximo recomendado: ${PH_MAX}).`,
+        icon: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png"
+      });
+    }
+  }
+
+  onValue(sensoresRef, (snapshot) => {
+    const d = snapshot.val();
+    if (!d) return;
+
+    const updateValue = (id, val, range = null) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      const displayVal = val !== null && val !== undefined ? parseFloat(val).toFixed(1) : "--";
+      el.textContent = displayVal;
+
+      el.classList.remove('alert-low', 'alert-high');
+
+      if (range && val !== "--" && !isNaN(val)) {
+        const num = parseFloat(val);
+        if (num < range.min) el.classList.add('alert-low');
+        else if (num > range.max) el.classList.add('alert-high');
+      }
+    };
+
+    // Actualizar valores
+    updateValue("waterTemp", d.waterTemp, { min: 18, max: 28 });
+    updateValue("dhtTemp", d.dhtTemp);
+    updateValue("hum", d.hum, { min: 40, max: 80 });
+    updateValue("tds", d.tds);
+    updateValue("ec", d.ec);
+    updateValue("nivel", d.nivel);
+
+    // Manejo especial para pH
+    const phEl = document.getElementById("ph");
+    const phValue = d.ph;
+    if (phValue !== null && phValue !== undefined && !isNaN(phValue)) {
+      const phNum = parseFloat(phValue);
+      const displayPH = phNum.toFixed(2);
+      phEl.textContent = displayPH;
+
+      // Verificar si el pH está alto
+      if (phNum > PH_MAX) {
+        phEl.classList.add('alert-high');
+        if (!phAlertActive) {
+          showPHAlert(displayPH);
+          phAlertActive = true; // Evita múltiples notificaciones
+        }
+      } else {
+        phEl.classList.remove('alert-high');
+        phAlertActive = false; // Reinicia cuando vuelve a rango
+      }
+    } else {
+      phEl.textContent = "--";
+      phEl.classList.remove('alert-high');
+      phAlertActive = false;
+    }
+  });
+</script>
+
+</body>
+</html>

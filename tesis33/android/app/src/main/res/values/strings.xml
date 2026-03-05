@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Panel Hidropónico</string>
+    <string name="title_activity_main">Panel Hidropónico</string>
+    <string name="package_name">com.unesum.panelhidroponico</string>
+    <string name="custom_url_scheme">com.unesum.panelhidroponico</string>
+</resources>

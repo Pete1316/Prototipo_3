@@ -1,0 +1,12 @@
+node_modules/
+*.zip
+*.rar
+*.xlsx
+*.pdf
+__pycache__/
+.DS_Store
+build/
+dist/
+*.pyc
+.vscode/
+tesis33/node_modules/

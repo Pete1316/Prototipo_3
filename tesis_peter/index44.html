@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Monitor Hidropónico</title>
+  <link rel="stylesheet" href="estilo.css">
+  <style>
+    .normal { color: green; }
+    .alert { color: red; }
+  </style>
+</head>
+<body>
+
+  <h1>Monitor Hidropónico</h1>
+
+  <!-- Login -->
+  <div id="loginDiv">
+    <h2>Iniciar sesión</h2>
+    <input type="email" id="email" placeholder="Correo"><br>
+    <input type="password" id="password" placeholder="Contraseña"><br>
+    <button id="loginBtn">Ingresar</button>
+    <p id="loginError" style="color:red;"></p>
+  </div>
+
+  <!-- Datos de sensores -->
+  <div id="dataDiv" style="display:none;">
+    <div class="sensor">Temperatura: <span id="temp">--</span> °C</div>
+    <div class="sensor">TDS: <span id="tds">--</span> ppm</div>
+    <div class="sensor">pH: <span id="ph">--</span></div>
+    <div class="sensor">EC: <span id="ec">--</span> μS/cm</div>
+
+    <h3>Control de LED</h3>
+    <button id="ledOnBtn">Encender LED</button>
+    <button id="ledOffBtn">Apagar LED</button>
+    <p>Estado LED: <span id="ledStatus">--</span></p>
+
+    <button id="logoutBtn">Cerrar sesión</button>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  // Configuración Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDzxgiVwirLRqNnLhyhIjPBijLv9kRDI-I",
+    authDomain: "esp32-a9f92.firebaseapp.com",
+    databaseURL: "https://esp32-a9f92-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "esp32-a9f92",
+    storageBucket: "esp32-a9f92.appspot.com",
+    messagingSenderId: "917386871044",
+    appId: "1:917386871044:web:872db9ffa05fb85e7d5051"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+
+  const loginDiv = document.getElementById("loginDiv");
+  const dataDiv = document.getElementById("dataDiv");
+  const loginError = document.getElementById("loginError");
+  const ledStatusSpan = document.getElementById("ledStatus");
+
+  // Login
+  document.getElementById("loginBtn").addEventListener("click", () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    loginError.textContent = "";
+
+    signInWithEmailAndPassword(auth, email, password)
+      .catch(error => { loginError.textContent = "Error: " + error.message; });
+  });
+
+  // Logout
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    signOut(auth);
+  });
+
+  // Estado auth
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      loginDiv.style.display = "none";
+      dataDiv.style.display = "block";
+
+      // Lectura sensores en tiempo real
+      const sensoresRef = ref(db, 'sensores');
+      onValue(sensoresRef, snapshot => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        document.getElementById("temp").textContent = parseFloat(data.temp).toFixed(1);
+        document.getElementById("temp").className = (data.temp >= 20 && data.temp <= 26) ? "normal" : "alert";
+
+        document.getElementById("tds").textContent = parseInt(data.tds);
+        document.getElementById("tds").className = (data.tds >= 400 && data.tds <= 800) ? "normal" : "alert";
+
+        document.getElementById("ph").textContent = parseFloat(data.ph).toFixed(2);
+        document.getElementById("ph").className = (data.ph >= 5.5 && data.ph <= 6.5) ? "normal" : "alert";
+
+        document.getElementById("ec").textContent = parseInt(data.ec);
+        document.getElementById("ec").className = (data.ec >= 800 && data.ec <= 1500) ? "normal" : "alert";
+      });
+
+      // Control LED
+      function actualizarLED(estado) {
+        set(ref(db, 'led/state'), estado)
+          .then(() => { ledStatusSpan.textContent = estado.toUpperCase(); })
+          .catch(err => console.error("Error al actualizar LED:", err));
+      }
+
+      document.getElementById("ledOnBtn").addEventListener("click", () => actualizarLED("on"));
+      document.getElementById("ledOffBtn").addEventListener("click", () => actualizarLED("off"));
+
+      // Escuchar cambios del LED en Firebase
+      const ledRef = ref(db, 'led/state');
+      onValue(ledRef, snapshot => {
+        const estado = snapshot.val();
+        if (estado) ledStatusSpan.textContent = estado.toUpperCase();
+      });
+
+    } else {
+      loginDiv.style.display = "block";
+      dataDiv.style.display = "none";
+    }
+  });
+</script>
+
+</body>
+</html>

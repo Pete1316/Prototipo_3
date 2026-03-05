@@ -1,0 +1,125 @@
+body {
+  font-family: Arial;
+  text-align: center;
+  background: #eef;
+  padding-top: 40px;
+}
+
+h1 {
+  color: #003366;
+  margin-bottom: 30px;
+}
+
+
+.card.bg-light{
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+  transition: transform 0.2s;
+  background-color: #7ab6c579 !important; /* Verde muy claro */
+}
+
+.card-bomba {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+  transition: transform 0.2s;
+  background-color: #7ab6c579 !important; /* Verde muy claro */
+
+
+}
+
+/* Quitar efecto azul del switch Bootstrap */
+.form-check-input:focus {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.form-check-input:active {
+  box-shadow: none !important;
+}
+
+/* Opcional: quitar highlight en móviles */
+.form-check-input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+
+
+
+.sensor {
+  font-size: 28px;
+  margin: 15px;
+}
+
+.normal {
+  color: green;
+  font-weight: bold;
+}
+
+.alert {
+  color: red;
+  font-weight: bold;
+}
+
+#loginDiv,
+#dataDiv {
+  margin: 20px auto;
+  width: 300px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+input {
+  width: 90%;
+  padding: 8px;
+  margin: 5px 0;
+}
+
+button {
+  padding: 10px 20px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.on {
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+.off {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+
+
+
+.logout {
+  background: #555;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+    body {
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+    .card {
+      box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
+    }
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 24px;
+    }
+    .btn {
+      margin: 4px;
+    }

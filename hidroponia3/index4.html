@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monitoreo de Sensores</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="estilo.css">
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#3b82f6" />
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Monitoreo de Sensores</h1>
+    <p class="subtitle">Datos en tiempo real desde Firebase</p>
+  </header>
+
+  <div class="sensor-grid">
+    <div class="sensor-item temp-agua">
+      <div class="icon-label"><i class="fas fa-water"></i> Temperatura Agua</div>
+      <div class="value-wrapper"><span id="waterTemp">--</span><span class="unit">°C</span></div>
+    </div>
+    <div class="sensor-item temp-amb">
+      <div class="icon-label"><i class="fas fa-thermometer-half"></i> Temp. Ambiente</div>
+      <div class="value-wrapper"><span id="dhtTemp">--</span><span class="unit">°C</span></div>
+    </div>
+    <div class="sensor-item humedad">
+      <div class="icon-label"><i class="fas fa-tint"></i> Humedad</div>
+      <div class="value-wrapper"><span id="hum">--</span><span class="unit">%</span></div>
+    </div>
+    <div class="sensor-item ph">
+      <div class="icon-label"><i class="fas fa-vial"></i> pH</div>
+      <div class="value-wrapper" id="ph">--</div>
+    </div>
+    <div class="sensor-item tds">
+      <div class="icon-label"><i class="fas fa-filter"></i> TDS</div>
+      <div class="value-wrapper"><span id="tds">--</span><span class="unit">ppm</span></div>
+    </div>
+    <div class="sensor-item ec-tds">
+      <div class="icon-label"><i class="fas fa-bolt"></i> EC (desde TDS)</div>
+      <div class="value-wrapper"><span id="tds_ec">--</span><span class="unit">mS/cm</span></div>
+    </div>
+    <div class="sensor-item ec">
+      <div class="icon-label"><i class="fas fa-bolt"></i> EC (sensor)</div>
+      <div class="value-wrapper"><span id="ec">--</span><span class="unit">mS/cm</span></div>
+    </div>
+    <div class="sensor-item nivel">
+      <div class="icon-label"><i class="fas fa-ruler-vertical"></i> Nivel</div>
+      <div class="value-wrapper"><span id="nivel">--</span><span class="unit">cm</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+// 🔹 Config Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyBXAal12oFlxKZ81PlaDNnar_y2-DiZRlU",
+  authDomain: "esp32-a7ac9.firebaseapp.com",
+  databaseURL: "https://esp32-a7ac9-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "esp32-a7ac9",
+  storageBucket: "esp32-a7ac9.firebasestorage.app",
+  messagingSenderId: "312730525959",
+  appId: "1:312730525959:web:dae44f28a4149dcee165a2"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const sensoresRef = ref(db, "sensores");
+
+// ⚠️ Rango óptimo de pH
+const PH_MIN = 5.5;
+const PH_MAX = 6.5;
+let currentPH = null;
+
+// 🔹 Función para notificación pH
+function showPHToast(value) {
+  const container = document.getElementById("toast-container");
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  const isHigh = value > PH_MAX;
+  const color = isHigh ? "#ef4444" : "#f59e0b";
+  const title = isHigh ? "⚠️ pH muy alto" : "⚠️ pH muy bajo";
+  const message = `El pH del agua es <strong>${value}</strong>. Rango ideal: ${PH_MIN}–${PH_MAX}.`;
+  toast.style.borderLeftColor = color;
+  toast.innerHTML = `
+    <div class="toast-icon">
+      <i class="fas fa-exclamation-triangle" style="color: ${color}"></i>
+    </div>
+    <div class="toast-content">
+      <div class="toast-title">${title}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close">&times;</button>
+  `;
+  container.appendChild(toast);
+  toast.querySelector(".toast-close").addEventListener("click", () => toast.remove());
+  setTimeout(() => { if (toast.parentNode) toast.remove(); }, 6000);
+}
+
+// 🔹 Verificar pH cada 10s
+setInterval(() => {
+  if (currentPH !== null && (currentPH < PH_MIN || currentPH > PH_MAX)) {
+    showPHToast(currentPH.toFixed(2));
+  }
+}, 10000);
+
+// 🔹 Escuchar Firebase
+onValue(sensoresRef, (snapshot) => {
+  const d = snapshot.val();
+  if (!d) return;
+
+  const update = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = (val != null && !isNaN(Number(val))) ? Number(val).toFixed(1) : "--";
+  };
+
+  // Actualizar valores
+  update("waterTemp", d.waterTemp);
+  update("dhtTemp", d.dhtTemp);
+  update("hum", d.hum);
+  update("tds", d.tds);
+  update("ec", d.ec);
+  update("nivel", d.nivel);
+
+  // Actualizar EC desde TDS
+  const factorTDS_EC = 2.0; // Ajustable según calibración
+  const tdsEC = parseFloat(d.tds) * factorTDS_EC;
+  document.getElementById("tds_ec").textContent = (tdsEC / 1000).toFixed(2); // mS/cm
+
+  // Actualizar pH
+  const phNum = parseFloat(d.ph);
+  if (!isNaN(phNum)) {
+    currentPH = phNum;
+    const phEl = document.getElementById("ph");
+    phEl.textContent = phNum.toFixed(2);
+    phEl.classList.toggle("alert-high", phNum < PH_MIN || phNum > PH_MAX);
+  } else {
+    currentPH = null;
+    const phEl = document.getElementById("ph");
+    phEl.textContent = "--";
+    phEl.classList.remove("alert-high");
+  }
+});
+</script>
+
+</body>
+</html>

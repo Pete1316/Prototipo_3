@@ -1,0 +1,27 @@
+
+.card.p-4 h5 {
+  color: #0277bd;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+
+
+
+/* Botones de medición (pH, TDS) en azul */
+#btnOn2, #btnOff2 {
+  background-color: #2196f3;
+  border-color: #1976d2;
+}
+
+#btnOn2:hover, #btnOff2:hover {
+  background-color: #1976d2;
+  border-color: #0d47a1;
+}
+
+/* Responsive: asegurar buen espaciado en móviles */
+@media (max-width: 768px) {
+  .btn-group .btn {
+    font-size: 0.9rem;
+  }
+}

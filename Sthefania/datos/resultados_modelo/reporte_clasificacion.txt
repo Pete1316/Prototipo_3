@@ -1,0 +1,11 @@
+Accuracy: 0.8814
+
+                 precision    recall  f1-score   support
+
+       AGRICOLA       0.82      0.75      0.78        12
+   HABITACIONAL       1.00      0.93      0.96        28
+HUERTO FAMILIAR       0.77      0.89      0.83        19
+
+       accuracy                           0.88        59
+      macro avg       0.86      0.86      0.86        59
+   weighted avg       0.89      0.88      0.88        59

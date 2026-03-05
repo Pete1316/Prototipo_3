@@ -1,0 +1,146 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  background: #eef2f7;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 30px;
+  color: #1f2937;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+}
+
+/* Encabezado */
+header {
+  margin-bottom: 30px;
+}
+
+header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+/* Grid */
+.sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+/* Tarjeta */
+.sensor-item {
+  background: white;
+  border-radius: 16px;
+  padding: 25px 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 140px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Línea superior de color */
+.sensor-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 5px;
+  width: 100%;
+}
+
+/* Colores por sensor */
+.temp-agua::before { background: #3b82f6; }
+.temp-amb::before { background: #f97316; }
+.humedad::before { background: #22c55e; }
+.ph::before { background: #a855f7; }
+.tds::before { background: #eab308; }
+.ec::before { background: #06b6d4; }
+.nivel::before { background: #ef4444; }
+
+/* Icono y nombre */
+.icon-label {
+  font-size: 0.9rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-label i {
+  font-size: 1.2rem;
+}
+
+/* Valor principal */
+.value-wrapper {
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin-top: 10px;
+  display: flex;
+  align-items: baseline;
+}
+
+.unit {
+  font-size: 1rem;
+  margin-left: 6px;
+  color: #9ca3af;
+}
+
+/* pH alerta */
+.alert-high {
+  color: #dc2626;
+}
+
+/* Toast */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+}
+
+.toast {
+  background: white;
+  border-left: 4px solid #f59e0b;
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  min-width: 260px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+
+.toast-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.toast-message {
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  margin-left: auto;
+}

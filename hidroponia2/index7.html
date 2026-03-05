@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sensores en Tiempo Real</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 840px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 2rem; }
+    h1 { font-size: 1.8rem; font-weight: 700; color: #0f172a; }
+    .subtitle { color: #64748b; font-size: 0.95rem; margin-top: 0.25rem; }
+
+    /* Tarjetas de sensores */
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.25rem;
+    }
+    .sensor-item {
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .temp-agua { border-top: 4px solid #3b82f6; }
+    .temp-amb  { border-top: 4px solid #60a5fa; }
+    .humedad   { border-top: 4px solid #10b981; }
+    .ph        { border-top: 4px solid #f97316; }
+    .tds       { border-top: 4px solid #8b5cf6; }
+    .ec        { border-top: 4px solid #ec4899; }
+    .nivel     { border-top: 4px solid #0ea5e9; }
+    .icon-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+    .value-wrapper {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0f172a;
+      transition: all 0.3s ease-in-out;
+    }
+    .unit { font-size: 0.85rem; color: #94a3b8; margin-left: 0.25rem; }
+    .alert-high { color: #ef4444 !important; }
+
+    /* Notificación tipo toast (estilo YouTube) */
+    #toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 320px;
+    }
+
+    .toast {
+      background: #fff;
+      border-left: 4px solid #ef4444;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      animation: slideIn 0.3s ease-out forwards;
+    }
+
+    .toast-icon {
+      font-size: 24px;
+      color: #ef4444;
+      margin-top: 2px;
+    }
+
+    .toast-content {
+      flex: 1;
+    }
+
+    .toast-title {
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .toast-message {
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+
+    .toast-close {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: #94a3b8;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .toast-close:hover {
+      color: #1e293b;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(120%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @media (max-width: 600px) {
+      .sensor-grid { grid-template-columns: 1fr; }
+      body { padding: 1.5rem 0.8rem; }
+      #toast-container {
+        top: 16px;
+        right: 16px;
+        left: 16px;
+        max-width: calc(100% - 32px);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Monitoreo de Sensores</h1>
+      <p class="subtitle">Datos en tiempo real desde Firebase</p>
+    </header>
+
+    <div class="sensor-grid">
+      <div class="sensor-item temp-agua">
+        <div class="icon-label"><i class="fas fa-water"></i> Temperatura Agua</div>
+        <div class="value-wrapper"><span id="waterTemp">--</span><span class="unit">°C</span></div>
+      </div>
+      <div class="sensor-item temp-amb">
+        <div class="icon-label"><i class="fas fa-thermometer-half"></i> Temp. Ambiente</div>
+        <div class="value-wrapper"><span id="dhtTemp">--</span><span class="unit">°C</span></div>
+      </div>
+      <div class="sensor-item humedad">
+        <div class="icon-label"><i class="fas fa-tint"></i> Humedad</div>
+        <div class="value-wrapper"><span id="hum">--</span><span class="unit">%</span></div>
+      </div>
+      <div class="sensor-item ph">
+        <div class="icon-label"><i class="fas fa-vial"></i> pH</div>
+        <div class="value-wrapper" id="ph">--</div>
+      </div>
+      <div class="sensor-item tds">
+        <div class="icon-label"><i class="fas fa-filter"></i> TDS</div>
+        <div class="value-wrapper"><span id="tds">--</span><span class="unit">ppm</span></div>
+      </div>
+      <div class="sensor-item ec">
+        <div class="icon-label"><i class="fas fa-bolt"></i> EC</div>
+        <div class="value-wrapper"><span id="ec">--</span><span class="unit">mS/cm</span></div>
+      </div>
+      <div class="sensor-item nivel">
+        <div class="icon-label"><i class="fas fa-ruler-vertical"></i> Nivel</div>
+        <div class="value-wrapper"><span id="nivel">--</span><span class="unit">cm</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor de notificaciones -->
+  <div id="toast-container"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXAal12oFlxKZ81PlaDNnar_y2-DiZRlU",
+      authDomain: "esp32-a7ac9.firebaseapp.com",
+      databaseURL: "https://esp32-a7ac9-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "esp32-a7ac9",
+      storageBucket: "esp32-a7ac9.firebasestorage.app",
+      messagingSenderId: "312730525959",
+      appId: "1:312730525959:web:dae44f28a4149dcee165a2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const sensoresRef = ref(db, "sensores");
+
+    const PH_MAX = 8.0;
+    let phAlertActive = false;
+
+    // Función para mostrar notificación tipo toast
+    function showPHToast(value) {
+      if (phAlertActive) return;
+
+      phAlertActive = true;
+
+      const container = document.getElementById("toast-container");
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.innerHTML = `
+        <div class="toast-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="toast-content">
+          <div class="toast-title">⚠️ Alerta de pH alto</div>
+          <div class="toast-message">El pH del agua es <strong>${value}</strong> (máximo recomendado: ${PH_MAX}).</div>
+        </div>
+        <button class="toast-close">&times;</button>
+      `;
+
+      container.appendChild(toast);
+
+      // Cerrar al hacer clic en ×
+      toast.querySelector(".toast-close").addEventListener("click", () => {
+        toast.remove();
+        phAlertActive = false;
+      });
+
+      // Cerrar automáticamente después de 8 segundos
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.remove();
+          phAlertActive = false;
+        }
+      }, 8000);
+    }
+
+    onValue(sensoresRef, (snapshot) => {
+      const d = snapshot.val();
+      if (!d) return;
+
+      const update = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = (val != null && !isNaN(Number(val))) ? Number(val).toFixed(1) : "--";
+      };
+
+      update("waterTemp", d.waterTemp);
+      update("dhtTemp", d.dhtTemp);
+      update("hum", d.hum);
+      update("tds", d.tds);
+      update("ec", d.ec);
+      update("nivel", d.nivel);
+
+      // Manejo de pH
+      const phEl = document.getElementById("ph");
+      const rawPH = d.ph;
+      const phNum = parseFloat(rawPH);
+
+      if (!isNaN(phNum)) {
+        const displayPH = phNum.toFixed(2);
+        phEl.textContent = displayPH;
+
+        if (phNum > PH_MAX) {
+          phEl.classList.add("alert-high");
+          showPHToast(displayPH);
+        } else {
+          phEl.classList.remove("alert-high");
+          phAlertActive = false;
+        }
+      } else {
+        phEl.textContent = "--";
+        phEl.classList.remove("alert-high");
+        phAlertActive = false;
+      }
+    });
+  </script>
+</body>
+</html>
+

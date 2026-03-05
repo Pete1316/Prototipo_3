@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sensores en Tiempo Real</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background:#f1f5f9;
+  margin:0;
+  padding:20px;
+}
+
+.container{
+  max-width:1200px;
+  margin:auto;
+}
+
+header{
+  text-align:center;
+  margin-bottom:25px;
+}
+
+.subtitle{
+  color:#64748b;
+}
+
+/* --- Dashboard Superior --- */
+.sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.sensor-item {
+  background: white;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.icon-label {
+  font-weight: bold;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+}
+
+.value-wrapper {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.value-wrapper .unit{
+  font-size: 1rem;
+  margin-left: 3px;
+  color:#64748b;
+}
+
+/* --- Tablas de detalle --- */
+.box{
+  background:white;
+  border-radius:12px;
+  padding:15px;
+  margin-bottom:25px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+
+.header-box{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+
+.status{
+  padding:6px 12px;
+  border-radius:8px;
+  font-weight:bold;
+  background:#e2e8f0;
+}
+
+.value{
+  font-size:1.8rem;
+  font-weight:bold;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:8px;
+  border-bottom:1px solid #e5e7eb;
+  text-align:center;
+}
+
+th{
+  background:#f8fafc;
+}
+
+.highlight{
+  background:#bbf7d0 !important;
+  font-weight:bold;
+}
+
+/* --- Diagnóstico general --- */
+#diagnostico{
+  background:#fef9c3;
+  border-radius:12px;
+  padding:15px;
+  margin-bottom:25px;
+  font-weight:bold;
+  font-size:1.2rem;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+<header>
+<h1>Carrera de Agropecuaria</h1>
+<p class="subtitle">Parámetros Hidropónicos</p>
+</header>
+
+<!-- --- Dashboard Superior --- -->
+<div class="sensor-grid">
+  <div class="sensor-item temp-agua">
+    <div class="icon-label"><i class="fas fa-water"></i> Temperatura Agua</div>
+    <div class="value-wrapper"><span id="waterTempTop">--</span><span class="unit">°C</span></div>
+  </div>
+
+  <div class="sensor-item temp-amb">
+    <div class="icon-label"><i class="fas fa-thermometer-half"></i> Temp. Ambiente</div>
+    <div class="value-wrapper"><span id="dhtTempTop">--</span><span class="unit">°C</span></div>
+  </div>
+
+  <div class="sensor-item humedad">
+    <div class="icon-label"><i class="fas fa-tint"></i> Humedad</div>
+    <div class="value-wrapper"><span id="humTop">--</span><span class="unit">%</span></div>
+  </div>
+
+  <div class="sensor-item ph">
+    <div class="icon-label"><i class="fas fa-vial"></i> pH</div>
+    <div class="value-wrapper"><span id="phTop">--</span></div>
+  </div>
+
+  <div class="sensor-item tds">
+    <div class="icon-label"><i class="fas fa-filter"></i> TDS</div>
+    <div class="value-wrapper"><span id="tdsTop">--</span><span class="unit">ppm</span></div>
+  </div>
+
+  <div class="sensor-item ec">
+    <div class="icon-label"><i class="fas fa-bolt"></i> EC (sensor)</div>
+    <div class="value-wrapper"><span id="ecTop">--</span><span class="unit">mS/cm</span></div>
+  </div>
+
+  <div class="sensor-item nivel">
+    <div class="icon-label"><i class="fas fa-ruler-vertical"></i> Nivel</div>
+    <div class="value-wrapper"><span id="nivelTop">--</span><span class="unit">cm</span></div>
+  </div>
+</div>
+
+<!-- --- Input días del tomate --- -->
+<div class="box">
+  <label for="diasTomate">Ingrese los días de su cultivo de tomate:</label>
+  <input type="number" id="diasTomate" min="0" max="120" value="0" />
+</div>
+
+<!-- --- Diagnóstico general --- -->
+<div id="diagnostico">Diagnóstico: --</div>
+
+<!-- --- Tablas de detalle --- -->
+<div id="contenido"></div>
+</div>
+
+<script>
+function crearTabla(id, columnas, filas){
+  return `
+  <div class="box">
+    <div class="header-box">
+      <span id="${id}Status" class="status">--</span>
+      <span id="${id}Value" class="value">--</span>
+    </div>
+    <table id="${id}Table">
+      <thead>
+        <tr>${columnas.map(c=>`<th>${c}</th>`).join("")}</tr>
+      </thead>
+      <tbody>
+        ${filas.map(f=>`
+          <tr data-min="${f.min}" data-max="${f.max}">
+            ${f.cols.map(c=>`<td>${c}</td>`).join("")}
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+const contenido = document.getElementById("contenido");
+
+function agregarBloque(id,columnas,filas){
+  contenido.innerHTML += crearTabla(id,columnas,filas);
+}
+
+/* TABLAS DE DETALLE */
+
+/* NIVEL DE AGUA */
+agregarBloque("nivel", ["Nivel","Estado","Condición"],[
+  {min:0,max:1,cols:["0","Hay agua","Sistema funcionando"]},
+  {min:1,max:2,cols:["1","Sin agua","Riesgo para bomba"]}
+]);
+
+/* PH */
+agregarBloque("ph", ["pH","Fase","Característica"],[
+  {min:0,max:5.4,cols:["< 5.5","Ácido","Riesgo para plantas"]},
+  {min:5.5,max:6.5,cols:["5.5 – 6.5","Óptimo","Crecimiento ideal"]},
+  {min:6.5,max:14,cols:["> 6.5","Alcalino","Riesgo por pH alto"]}
+]);
+
+/* EC */
+agregarBloque("ec", ["EC (mS/cm)","Estado","Nivel"],[
+  {min:0,max:1,cols:["< 1.0","Deficiente","Muy bajo"]},
+  {min:1,max:2,cols:["1.0 – 2.0","Crecimiento","Adecuado"]},
+  {min:2,max:3.5,cols:["2.0 – 3.5","Producción","Óptimo"]},
+  {min:3.5,max:5,cols:["3.5 – 5.0","Exceso","Alto"]},
+  {min:5,max:20,cols:["> 5.0","Peligro","Riesgo"]}
+]);
+
+/* TDS */
+agregarBloque("tds", ["TDS (ppm)","Fase","Estado"],[
+  {min:0,max:400,cols:["< 400","Inicio","Muy bajo"]},
+  {min:400,max:700,cols:["400 – 700","Transición","Adecuado"]},
+  {min:700,max:1100,cols:["700 – 1100","Maduro","Óptimo"]},
+  {min:1100,max:1500,cols:["1100 – 1500","Final","Alto"]},
+  {min:1500,max:5000,cols:["> 1500","Sobremaduro","Riesgo salino"]}
+]);
+
+/* TEMP AGUA */
+agregarBloque("waterTemp", ["Temp Agua °C","Estado","Condición"],[
+  {min:0,max:15,cols:["< 15","Fría","Riesgo raíz"]},
+  {min:15,max:25,cols:["15 – 25","Ideal","Óptima"]},
+  {min:25,max:35,cols:["> 25","Caliente","Estrés"]}
+]);
+
+/* TEMP AMBIENTE */
+agregarBloque("dhtTemp", ["Temp Ambiente °C","Estado","Condición"],[
+  {min:0,max:18,cols:["< 18","Frío","Lento crecimiento"]},
+  {min:18,max:30,cols:["18 – 30","Ideal","Óptimo"]},
+  {min:30,max:50,cols:["> 30","Calor","Estrés"]}
+]);
+
+/* HUMEDAD */
+agregarBloque("hum", ["Humedad %","Estado","Condición"],[
+  {min:0,max:40,cols:["< 40","Baja","Estrés hídrico"]},
+  {min:40,max:70,cols:["40 – 70","Ideal","Óptima"]},
+  {min:70,max:100,cols:["> 70","Alta","Riesgo hongos"]}
+]);
+
+function actualizarTabla(valor,id){
+  const filas=document.querySelectorAll(`#${id}Table tbody tr`);
+  const status=document.getElementById(`${id}Status`);
+  const value=document.getElementById(`${id}Value`);
+  value.textContent=valor.toFixed(2);
+
+  filas.forEach(f=>{
+    f.classList.remove("highlight");
+    const min=parseFloat(f.dataset.min);
+    const max=parseFloat(f.dataset.max);
+    if(valor>=min && valor<max){
+      f.classList.add("highlight");
+      status.textContent=f.cells[1].textContent;
+    }
+  });
+
+  actualizarDiagnostico();
+}
+
+// --- Diagnóstico general basado en todos los parámetros y días del tomate ---
+const diasInput = document.getElementById("diasTomate");
+diasInput.addEventListener("input", actualizarDiagnostico);
+
+function actualizarDiagnostico(){
+  const ph = parseFloat(document.getElementById("phTop").textContent);
+  const ec = parseFloat(document.getElementById("ecTop").textContent);
+  const tds = parseFloat(document.getElementById("tdsTop").textContent);
+  const waterTemp = parseFloat(document.getElementById("waterTempTop").textContent);
+  const dhtTemp = parseFloat(document.getElementById("dhtTempTop").textContent);
+  const hum = parseFloat(document.getElementById("humTop").textContent);
+  const nivel = parseFloat(document.getElementById("nivelTop").textContent);
+  const dias = parseInt(diasInput.value) || 0;
+
+  let problemas = [];
+
+  if(isNaN(ph) || ph<5.5 || ph>6.5) problemas.push("pH fuera de rango");
+  if(isNaN(ec) || ec<1 || ec>3.5) problemas.push("EC inadecuado");
+  if(isNaN(tds) || tds<400 || tds>1100) problemas.push("TDS fuera de rango");
+  if(isNaN(waterTemp) || waterTemp<15 || waterTemp>25) problemas.push("Temp agua fuera de rango");
+  if(isNaN(dhtTemp) || dhtTemp<18 || dhtTemp>30) problemas.push("Temp ambiente fuera de rango");
+  if(isNaN(hum) || hum<40 || hum>70) problemas.push("Humedad fuera de rango");
+  if(isNaN(nivel) || nivel>1) problemas.push("Nivel de agua bajo");
+
+  let etapa = "";
+  if(dias <= 20) etapa = "Etapa semilla/plántula";
+  else if(dias <= 40) etapa = "Etapa vegetativa";
+  else etapa = "Etapa floración/producción";
+
+  const diag=document.getElementById("diagnostico");
+  diag.textContent = problemas.length===0 ? 
+    `Diagnóstico: Todos los parámetros están dentro del rango óptimo. (${etapa})` :
+    `Diagnóstico: Problemas detectados - ${problemas.join(", ")}. (${etapa})`;
+}
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBXAal12oFlxKZ81PlaDNnar_y2-DiZRlU",
+  authDomain: "esp32-a7ac9.firebaseapp.com",
+  databaseURL: "https://esp32-a7ac9-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "esp32-a7ac9",
+  storageBucket: "esp32-a7ac9.firebasestorage.app",
+  messagingSenderId: "312730525959",
+  appId: "1:312730525959:web:dae44f28a4149dcee165a2"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const sensoresRef = ref(db,"sensores");
+
+onValue(sensoresRef,(snapshot)=>{
+  const d=snapshot.val();
+  if(!d) return;
+
+  // Actualiza tablas
+  if(!isNaN(parseFloat(d.nivel))) actualizarTabla(parseFloat(d.nivel),"nivel");
+  if(!isNaN(parseFloat(d.ph))) actualizarTabla(parseFloat(d.ph),"ph");
+  if(!isNaN(parseFloat(d.ec))) actualizarTabla(parseFloat(d.ec),"ec");
+  if(!isNaN(parseFloat(d.tds))) actualizarTabla(parseFloat(d.tds),"tds");
+  if(!isNaN(parseFloat(d.waterTemp))) actualizarTabla(parseFloat(d.waterTemp),"waterTemp");
+  if(!isNaN(parseFloat(d.dhtTemp))) actualizarTabla(parseFloat(d.dhtTemp),"dhtTemp");
+  if(!isNaN(parseFloat(d.hum))) actualizarTabla(parseFloat(d.hum),"hum");
+
+  // Actualiza dashboard superior
+  if(!isNaN(parseFloat(d.nivel))) document.getElementById("nivelTop").textContent = parseFloat(d.nivel).toFixed(2);
+  if(!isNaN(parseFloat(d.ph))) document.getElementById("phTop").textContent = parseFloat(d.ph).toFixed(2);
+  if(!isNaN(parseFloat(d.ec))) document.getElementById("ecTop").textContent = parseFloat(d.ec).toFixed(2);
+  if(!isNaN(parseFloat(d.tds))) document.getElementById("tdsTop").textContent = parseFloat(d.tds).toFixed(2);
+  if(!isNaN(parseFloat(d.waterTemp))) document.getElementById("waterTempTop").textContent = parseFloat(d.waterTemp).toFixed(2);
+  if(!isNaN(parseFloat(d.dhtTemp))) document.getElementById("dhtTempTop").textContent = parseFloat(d.dhtTemp).toFixed(2);
+  if(!isNaN(parseFloat(d.hum))) document.getElementById("humTop").textContent = parseFloat(d.hum).toFixed(2);
+
+  actualizarDiagnostico();
+});
+</script>
+
+</body>
+</html>

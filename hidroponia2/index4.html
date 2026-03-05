@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sensores en Tiempo Real</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f9fafb;
+      color: #1e293b;
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    h1 {
+      font-weight: 600;
+      font-size: 1.8rem;
+      color: #0f172a;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .sensor-item {
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      background: white;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      transition: all 0.2s ease;
+    }
+
+    .sensor-item:hover {
+      border-color: #cbd5e1;
+      background: #fcfdfe;
+    }
+
+    .label {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 0.4rem;
+    }
+
+    .value {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+
+    .unit {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      margin-left: 0.25rem;
+    }
+
+    /* Animación suave al cargar */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .sensor-item {
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+    .sensor-item:nth-child(1) { animation-delay: 0.05s; }
+    .sensor-item:nth-child(2) { animation-delay: 0.1s; }
+    .sensor-item:nth-child(3) { animation-delay: 0.15s; }
+    .sensor-item:nth-child(4) { animation-delay: 0.2s; }
+    .sensor-item:nth-child(5) { animation-delay: 0.25s; }
+    .sensor-item:nth-child(6) { animation-delay: 0.3s; }
+    .sensor-item:nth-child(7) { animation-delay: 0.35s; }
+
+    @media (max-width: 600px) {
+      .sensor-grid {
+        grid-template-columns: 1fr;
+      }
+      body {
+        padding: 1.5rem 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Monitoreo de Sensores</h1>
+      <p class="subtitle">Datos en tiempo real desde Firebase</p>
+    </header>
+
+    <div class="sensor-grid">
+      <div class="sensor-item">
+        <span class="label">Temperatura Agua</span>
+        <span class="value"><span id="waterTemp">--</span><span class="unit">°C</span></span>
+      </div>
+      <div class="sensor-item">
+        <span class="label">Temperatura Ambiente</span>
+        <span class="value"><span id="dhtTemp">--</span><span class="unit">°C</span></span>
+      </div>
+      <div class="sensor-item">
+        <span class="label">Humedad</span>
+        <span class="value"><span id="hum">--</span><span class="unit">%</span></span>
+      </div>
+      <div class="sensor-item">
+        <span class="label">pH</span>
+        <span class="value" id="ph">--</span>
+      </div>
+      <div class="sensor-item">
+        <span class="label">TDS</span>
+        <span class="value"><span id="tds">--</span><span class="unit">ppm</span></span>
+      </div>
+      <div class="sensor-item">
+        <span class="label">EC</span>
+        <span class="value"><span id="ec">--</span><span class="unit">mS/cm</span></span>
+      </div>
+      <div class="sensor-item">
+        <span class="label">Nivel</span>
+        <span class="value"><span id="nivel">--</span><span class="unit">cm</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔥 Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXAal12oFlxKZ81PlaDNnar_y2-DiZRlU",
+      authDomain: "esp32-a7ac9.firebaseapp.com",
+      databaseURL: "https://esp32-a7ac9-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "esp32-a7ac9",
+      storageBucket: "esp32-a7ac9.firebasestorage.app",
+      messagingSenderId: "312730525959",
+      appId: "1:312730525959:web:dae44f28a4149dcee165a2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const sensoresRef = ref(db, "sensores");
+
+    onValue(sensoresRef, (snapshot) => {
+      const d = snapshot.val();
+      if (!d) return;
+
+      const update = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val ?? "--";
+      };
+
+      update("waterTemp", d.waterTemp);
+      update("dhtTemp", d.dhtTemp);
+      update("hum", d.hum);
+      update("ph", d.ph);
+      update("tds", d.tds);
+      update("ec", d.ec);
+      update("nivel", d.nivel);
+    });
+  </script>
+
+</body>
+</html>

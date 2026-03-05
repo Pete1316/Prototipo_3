@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sensores en Tiempo Real - Agropecuaria</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="estilo.css">
+    
+    <!-- Estilos inline para modo docente -->
+    <style>
+        body.modo-docente-activo {
+            background-color: inherit !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== CONTENEDOR PRINCIPAL ===== -->
+    <div class="container my-4">
+        <!-- HEADER -->
+        <header class="text-center">
+            <h1><i class="fas me-3"></i>Prototipo Hidropónico</h1>
+            <p class="subtitle"><i class="fas fa-leaf me-2"></i>Monitoreo en Tiempo Real - Tomate Hidropónico</p>
+        </header>
+        
+        <!-- PESTAÑAS PRINCIPALES -->
+        <ul class="nav nav-tabs nav-fill mb-4" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="dashboard-tab" data-bs-toggle="tab"
+                    data-bs-target="#dashboard" type="button" role="tab"
+                    aria-controls="dashboard" aria-selected="false">
+                    <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="enfermedades-tab" data-bs-toggle="tab"
+                    data-bs-target="#enfermedades" type="button" role="tab"
+                    aria-controls="enfermedades" aria-selected="false">
+                    <i class="fas fa-virus me-1"></i>Enfermedades
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="plagas-tab" data-bs-toggle="tab"
+                    data-bs-target="#plagas" type="button" role="tab"
+                    aria-controls="plagas" aria-selected="false">
+                    <i class="fas fa-bug me-1"></i>Plagas
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="prevencion-tab" data-bs-toggle="tab"
+                    data-bs-target="#prevencion" type="button" role="tab"
+                    aria-controls="prevencion" aria-selected="false">
+                    <i class="fas fa-shield-alt me-1"></i>Prevención
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="diagnostico-tab" data-bs-toggle="tab"
+                    data-bs-target="#diagnostico-pane" type="button" role="tab"
+                    aria-controls="diagnostico-pane" aria-selected="false">
+                    <i class="fas fa-stethoscope me-1"></i>Diagnóstico del Cultivo
+                </button>
+            </li>
+        </ul>
+        
+        <!-- ===== CONTENIDO DE PESTAÑAS ===== -->
+        <div class="tab-content" id="mainTabContent">
+            <!-- ================= PESTAÑA 1: DASHBOARD ================= -->
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
+                <!-- Botón Información Técnica al inicio del Dashboard -->
+                <div class="d-flex justify-content-between align-items-center mb-4" style="flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h5 style="margin: 0; color: var(--primary-color); font-weight: 800;">
+                            <i class="fas fa-tachometer-alt me-2"></i>Panel de Sensores en Tiempo Real
+                        </h5>
+                        <small class="text-muted">Monitoreo continuo del sistema hidropónico</small>
+                    </div>
+                    <button class="btn btn-success" onclick="toggleModoDocente()" id="btnDocente" 
+                        aria-pressed="false" style="font-weight: 600; padding: 0.7rem 1.5rem;">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>Información Técnica
+                    </button>
+                </div>
+                
+                <div class="sensor-container">
+                    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3 mb-3">
+                        <!-- Temperatura Agua -->
+                        <div class="col">
+                            <div class="sensor-item">
+                                <div class="icon-label"><i class="fas fa-water fa-2x"></i> Temperatura Agua</div>
+                                <div class="value-wrapper"><span id="waterTempTop">--</span><span class="unit">°C</span></div>
+                                <div class="explicacion-docente">
+                                    <strong>¿Qué mide?</strong> La temperatura del agua en el sistema hidropónico.<br>
+                                    <strong>Rango ideal:</strong> 18°C - 24°C.<br>
+                                    <strong>Importancia:</strong> Afecta la absorción de nutrientes y el oxígeno disuelto.
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Temp. Ambiente -->
+                        <div class="col">
+                            <div class="sensor-item">
+                                <div class="icon-label"><i class="fas fa-thermometer-half fa-2x"></i> Temp. Ambiente</div>
+                                <div class="value-wrapper"><span id="dhtTempTop">--</span><span class="unit">°C</span></div>
+                                <div class="explicacion-docente">
+                                    <strong>¿Qué mide?</strong> La temperatura del aire alrededor del cultivo.<br>
+                                    <strong>Rango ideal:</strong> 20°C - 28°C.<br>
+                                    <strong>Importancia:</strong> Influye en la fotosíntesis y transpiración.
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Humedad -->
+                        <div class="col">
+                            <div class="sensor-item">
+                                <div class="icon-label"><i class="fas fa-tint fa-2x"></i> Humedad</div>
+                                <div class="value-wrapper"><span id="humTop">--</span><span class="unit">%</span></div>
+                                <div class="explicacion-docente">
+                                    <strong>¿Qué mide?</strong> Humedad relativa del ambiente.<br>
+                                    <strong>Rango ideal:</strong> 50% - 70%.<br>
+                                    <strong>Importancia:</strong> Valores altos favorecen hongos; bajos causan estrés.
+                                </div>
+                            </div>
+                        </div>
+                        <!-- pH -->
+                        <div class="col">
+                            <div class="sensor-item">
+                                <div class="icon-label"><i class="fas fa-vial fa-2x"></i> pH</div>
+                                <div class="value-wrapper"><span id="phTop">--</span></div>
+                                <div class="explicacion-docente">
+                                    <strong>¿Qué mide?</strong> Acidez o alcalinidad de la solución nutritiva.<br>
+                                    <strong>Rango ideal:</strong> 5.5 - 6.5.<br>
+                                    <strong>Importancia:</strong> Determina la disponibilidad de nutrientes.
+                                </div>
+                            </div>
+                        </div>
+                        <!-- TDS -->
+                        <div class="col">
+                            <div class="sensor-item">
+                                <div class="icon-label"><i class="fas fa-filter fa-2x"></i> TDS</div>
+                                <div class="value-wrapper"><span id="tdsTop">--</span><span class="unit">ppm</span></div>
+                                <div class="explicacion-docente">
+                                    <strong>¿Qué mide?</strong> Sólidos Disueltos Totales.<br>
+                                    <strong>Rango ideal:</strong> 400-1200 ppm según etapa.<br>
+                                    <strong>Importancia:</strong> Indica la concentración total de nutrientes.
+                                </div>
+                            </div>
+                        </div>
+                        <!-- EC -->
+                        <div class="col">
+                            <div class="sensor-item">
+                                <div class="icon-label"><i class="fas fa-bolt fa-2x"></i> EC (sensor)</div>
+                                <div class="value-wrapper"><span id="ecTop">--</span><span class="unit">mS/cm</span></div>
+                                <div class="explicacion-docente">
+                                    <strong>¿Qué mide?</strong> Conductividad Eléctrica.<br>
+                                    <strong>Rango ideal:</strong> 1.0 - 3.5 mS/cm.<br>
+                                    <strong>Importancia:</strong> Correlacionada con la concentración de nutrientes.
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Nivel -->
+                        <div class="col">
+                            <div class="sensor-item">
+                                <div class="icon-label"><i class="fas fa-ruler-vertical fa-2x"></i> Nivel</div>
+                                <div class="value-wrapper"><span id="nivelTop">--</span></div>
+                                <div class="explicacion-docente">
+                                    <strong>¿Qué mide?</strong> Nivel de agua en el tanque.<br>
+                                    <strong>Estados:</strong> "Normal" o "Bajo".<br>
+                                    <strong>Importancia:</strong> Evita interrupciones en el suministro.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info text-center mb-0 mt-3" id="connectionStatus">
+                        <i class="fas fa-sync-alt fa-spin me-2"></i>Conectando con sensores...
+                    </div>
+                </div>
+                
+                <!-- SECCIÓN DE GRÁFICAS -->
+                <div class="charts-container">
+                    <h5><i class="fas fa-chart-line me-2"></i>Monitoreo en Tiempo Real</h5>
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <div class="chart-wrapper">
+                                <canvas id="temperatureChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="chart-wrapper">
+                                <canvas id="phChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="chart-wrapper">
+                                <canvas id="ecChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="chart-wrapper">
+                                <canvas id="humidityChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p><i class="fas fa-microchip me-1"></i>Sistema IoT para Agricultura Hidropónica | Datos actualizados en tiempo real</p>
+                    <p class="mb-0 small"><i class="fas fa-cloud me-1"></i>Conectado a Firebase Realtime Database</p>
+                </div>
+            </div>
+            
+            <!-- ================= PESTAÑA DIAGNÓSTICO ================= -->
+            <div class="tab-pane fade" id="diagnostico-pane" role="tabpanel" aria-labelledby="diagnostico-tab">
+                <div class="container my-4">
+                    <div class="box" id="diagnosticoBox" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafb 100%);">
+                        <div class="text-center mb-5">
+                            <h4><i class="fas fa-stethoscope me-3" style="font-size: 1.8rem;"></i>Diagnóstico del Cultivo de Tomate</h4>
+                            <p class="text-muted mb-0" style="font-size: 0.95rem;">
+                                <i class="fas fa-info-circle me-2"></i>Ingrese los días transcurridos desde la siembra para un análisis personalizado
+                            </p>
+                        </div>
+                        <div class="d-flex justify-content-center align-items-center flex-wrap gap-4 mb-5">
+                            <div class="input-group-custom">
+                                <label for="diasTomate" style="margin-bottom: 0;">
+                                    <i class="fas fa-calendar-alt me-2"></i>Días:
+                                </label>
+                                <input type="text" id="diasTomate" value="0" maxlength="3" inputmode="numeric"
+                                    oninput="validarDias(this)" aria-describedby="diasHelp"/>
+                                <span class="text-muted small ms-1" style="font-size: 0.95rem;">/ 120</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; 
+                                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); 
+                                padding: 0.9rem 1.5rem; border-radius: 10px; font-weight: 700; color: #1e40af;">
+                                <i class="fas fa-leaf" style="font-size: 1.1rem;"></i>
+                                Etapa actual: <span id="etapaActual" style="margin-left: 0.5rem; 
+                                    text-transform: uppercase; letter-spacing: 0.3px;">Vegetativa</span>
+                            </div>
+                        </div>
+                        <div id="diagnostico" role="region" aria-live="polite" aria-label="Diagnóstico del cultivo">
+                            <div class="data-loading">
+                                <i class="fas fa-satellite-dish"></i>
+                                <p>Esperando datos de los sensores para generar diagnóstico...</p>
+                            </div>
+                        </div>
+                        <div class="text-center mt-5">
+                            <button class="btn btn-success" onclick="generarReporte()" 
+                                style="font-weight: 700; padding: 0.85rem 2.5rem; font-size: 1rem;">
+                                <i class="fas fa-file-pdf me-2"></i>Generar Reporte Técnico
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ================= PESTAÑA 2: ENFERMEDADES ================= -->
+            <div class="tab-pane fade" id="enfermedades" role="tabpanel" aria-labelledby="enfermedades-tab">
+                <div class="container my-4">
+                    <h3 class="text-center mb-5 text-danger">
+                        <i class="fas fa-virus me-2"></i>Enfermedades Comunes en Tomate Hidropónico
+                    </h3>
+                    <div class="accordion" id="accordionEnfermedades">
+                        <!-- Tizón Tardío -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#tizon">
+                                    <i class="fas fa-circle-exclamation text-danger me-2"></i>
+                                    Tizón Tardío (Phytophthora infestans)
+                                </button>
+                            </h2>
+                            <div id="tizon" class="accordion-collapse collapse" data-bs-parent="#accordionEnfermedades">
+                                <div class="accordion-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <h6 class="text-primary"><i class="fas fa-search me-1"></i>Síntomas:</h6>
+                                            <ul class="small mb-0">
+                                                <li>Manchas marrones con halo amarillo en hojas</li>
+                                                <li>Podredumbre blanda en frutos</li>
+                                                <li>Polvo blanco en envés de hojas (esporas)</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6 class="text-primary"><i class="fas fa-thermometer-half me-1"></i>Condiciones favorables:</h6>
+                                            <ul class="small mb-0">
+                                                <li>Humedad > 90%</li>
+                                                <li>Temperatura: 15-20°C</li>
+                                                <li>Mala ventilación</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <h6 class="text-success"><i class="fas fa-flask me-1"></i>Manejo en hidroponía:</h6>
+                                    <ul class="small mb-0">
+                                        <li>Evitar salpicaduras de agua en follaje</li>
+                                        <li>Desinfectar solución nutritiva con UV o peróxido</li>
+                                        <li>Eliminar plantas infectadas inmediatamente</li>
+                                        <li>Aplicar <strong>Bacillus subtilis</strong> como preventivo</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Fusarium -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#fusarium">
+                                    <i class="fas fa-circle-exclamation text-warning me-2"></i>
+                                    Marchitez por Fusarium (Fusarium oxysporum)
+                                </button>
+                            </h2>
+                            <div id="fusarium" class="accordion-collapse collapse" data-bs-parent="#accordionEnfermedades">
+                                <div class="accordion-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <h6 class="text-primary"><i class="fas fa-search me-1"></i>Síntomas:</h6>
+                                            <ul class="small mb-0">
+                                                <li>Amarillamiento unilateral de hojas</li>
+                                                <li>Marchitez en horas cálidas, recuperación nocturna</li>
+                                                <li>Vasos conductores marrones al cortar tallo</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6 class="text-primary"><i class="fas fa-thermometer-half me-1"></i>Condiciones favorables:</h6>
+                                            <ul class="small mb-0">
+                                                <li>Temperatura del agua > 28°C</li>
+                                                <li>pH fuera de rango ideal</li>
+                                                <li>Estrés hídrico o nutricional</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <h6 class="text-success"><i class="fas fa-flask me-1"></i>Manejo en hidroponía:</h6>
+                                    <ul class="small mb-0">
+                                        <li>Mantener temperatura del agua 18-24°C</li>
+                                        <li>Usar <strong>Trichoderma harzianum</strong> en sustrato</li>
+                                        <li>Rotar cultivos y desinfectar sistema entre ciclos</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Botrytis -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#botrytis">
+                                    <i class="fas fa-circle-exclamation text-secondary me-2"></i>
+                                    Moho Gris (Botrytis cinerea)
+                                </button>
+                            </h2>
+                            <div id="botrytis" class="accordion-collapse collapse" data-bs-parent="#accordionEnfermedades">
+                                <div class="accordion-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <h6 class="text-primary"><i class="fas fa-search me-1"></i>Síntomas:</h6>
+                                            <ul class="small mb-0">
+                                                <li>Manchas acuosas en hojas y tallos</li>
+                                                <li>Polvo gris característico en zonas húmedas</li>
+                                                <li>Pudrición blanda en frutos maduros</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6 class="text-primary"><i class="fas fa-thermometer-half me-1"></i>Condiciones favorables:</h6>
+                                            <ul class="small mb-0">
+                                                <li>Humedad relativa > 85%</li>
+                                                <li>Temperatura: 18-23°C</li>
+                                                <li>Condensación en hojas</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <h6 class="text-success"><i class="fas fa-flask me-1"></i>Manejo en hidroponía:</h6>
+                                    <ul class="small mb-0">
+                                        <li>Mejorar ventilación y circulación de aire</li>
+                                        <li>Evitar mojar follaje al regar</li>
+                                        <li>Remover flores y frutos senescentes</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Pythium -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#pythium">
+                                    <i class="fas fa-circle-exclamation text-danger me-2"></i>
+                                    Podredumbre de Raíz (Pythium spp.)
+                                </button>
+                            </h2>
+                            <div id="pythium" class="accordion-collapse collapse" data-bs-parent="#accordionEnfermedades">
+                                <div class="accordion-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <h6 class="text-primary"><i class="fas fa-search me-1"></i>Síntomas:</h6>
+                                            <ul class="small mb-0">
+                                                <li>Raíces marrones, blandas y con mal olor</li>
+                                                <li>Crecimiento raquítico y amarillamiento</li>
+                                                <li>Marchitez a pesar de humedad adecuada</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6 class="text-primary"><i class="fas fa-thermometer-half me-1"></i>Condiciones favorables:</h6>
+                                            <ul class="small mb-0">
+                                                <li>Agua estancada o mal oxigenada</li>
+                                                <li>Temperatura del agua > 25°C</li>
+                                                <li>Bajos niveles de oxígeno disuelto</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <h6 class="text-success"><i class="fas fa-flask me-1"></i>Manejo en hidroponía:</h6>
+                                    <ul class="small mb-0">
+                                        <li>Mantener oxígeno disuelto > 6 ppm (usar aireadores)</li>
+                                        <li>Temperatura del agua: 18-22°C ideal</li>
+                                        <li>Aplicar <strong>peróxido de hidrógeno</strong> (H₂O₂) en dosis controladas</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-4">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Nota académica:</strong> En sistemas hidropónicos, la prevención es clave.
+                        La mayoría de enfermedades fúngicas se propagan por agua contaminada.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ================= PESTAÑA 3: PLAGAS ================= -->
+            <div class="tab-pane fade" id="plagas" role="tabpanel" aria-labelledby="plagas-tab">
+                <div class="container my-4">
+                    <h3 class="text-center mb-5 text-success">
+                        <i class="fas fa-bug me-2"></i>Plagas en Cultivo de Tomate
+                    </h3>
+                    <div class="row g-4">
+                        <!-- Áfidos -->
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border-success">
+                                <div class="card-header bg-success text-white">
+                                    <i class="fas fa-spider me-1"></i>Áfidos / Pulgones
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fas fa-eye me-1"></i>Identificación:</h6>
+                                    <p class="card-text small">Insectos pequeños (1-3 mm), verdes/negros, agrupados en envés de hojas.</p>
+                                    <h6><i class="fas fa-exclamation-triangle me-1"></i>Daños:</h6>
+                                    <ul class="small mb-2">
+                                        <li>Deformación de hojas y brotes</li>
+                                        <li>Secreción de melaza (atrae hormigas)</li>
+                                        <li>Transmisión de virus (CMV, ToMV)</li>
+                                    </ul>
+                                    <h6><i class="fas fa-shield-alt me-1"></i>Control:</h6>
+                                    <ul class="small mb-0">
+                                        <li><strong>Biológico:</strong> <em>Aphidius colemani</em></li>
+                                        <li><strong>Orgánico:</strong> Jabón potásico + aceite de neem</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Mosca Blanca -->
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <i class="fas fa-dove me-1"></i>Mosca Blanca
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fas fa-eye me-1"></i>Identificación:</h6>
+                                    <p class="card-text small">Pequeñas moscas blancas (2 mm) que vuelan al perturbar la planta.</p>
+                                    <h6><i class="fas fa-exclamation-triangle me-1"></i>Daños:</h6>
+                                    <ul class="small mb-2">
+                                        <li>Amarillamiento y debilitamiento</li>
+                                        <li>Transmisión de virus (TYLCV)</li>
+                                        <li>Desarrollo de fumagina</li>
+                                    </ul>
+                                    <h6><i class="fas fa-shield-alt me-1"></i>Control:</h6>
+                                    <ul class="small mb-0">
+                                        <li><strong>Biológico:</strong> <em>Encarsia formosa</em></li>
+                                        <li><strong>Mecánico:</strong> Trampas cromáticas amarillas</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Araña Roja -->
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <i class="fas fa-spider me-1"></i>Araña Roja
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fas fa-eye me-1"></i>Identificación:</h6>
+                                    <p class="card-text small">Ácaros diminutos (0.5 mm) rojizos. Producen telarañas finas.</p>
+                                    <h6><i class="fas fa-exclamation-triangle me-1"></i>Daños:</h6>
+                                    <ul class="small mb-2">
+                                        <li>Punteado amarillento en hojas</li>
+                                        <li>Secado prematuro y caída</li>
+                                        <li>Reducción de fotosíntesis</li>
+                                    </ul>
+                                    <h6><i class="fas fa-shield-alt me-1"></i>Control:</h6>
+                                    <ul class="small mb-0">
+                                        <li><strong>Ambiental:</strong> Aumentar humedad > 60%</li>
+                                        <li><strong>Biológico:</strong> <em>Phytoseiulus persimilis</em></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Trips -->
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border-info">
+                                <div class="card-header bg-info text-white">
+                                    <i class="fas fa-wind me-1"></i>Trips
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fas fa-eye me-1"></i>Identificación:</h6>
+                                    <p class="card-text small">Insectos alargados (1 mm), muy móviles. Se esconden en flores.</p>
+                                    <h6><i class="fas fa-exclamation-triangle me-1"></i>Daños:</h6>
+                                    <ul class="small mb-2">
+                                        <li>Raspaduras plateadas en hojas</li>
+                                        <li>Deformación de flores</li>
+                                        <li>Vector del virus TSWV</li>
+                                    </ul>
+                                    <h6><i class="fas fa-shield-alt me-1"></i>Control:</h6>
+                                    <ul class="small mb-0">
+                                        <li><strong>Monitoreo:</strong> Trampas azules</li>
+                                        <li><strong>Biológico:</strong> <em>Amblyseius swirskii</em></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Minador -->
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border-secondary">
+                                <div class="card-header bg-secondary text-white">
+                                    <i class="fas fa-pencil-alt me-1"></i>Minador de Hojas
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fas fa-eye me-1"></i>Identificación:</h6>
+                                    <p class="card-text small">Moscas pequeñas. Larvas crean "minas" serpenteantes blancas.</p>
+                                    <h6><i class="fas fa-exclamation-triangle me-1"></i>Daños:</h6>
+                                    <ul class="small mb-2">
+                                        <li>Reducción de área fotosintética</li>
+                                        <li>Caída prematura de hojas</li>
+                                    </ul>
+                                    <h6><i class="fas fa-shield-alt me-1"></i>Control:</h6>
+                                    <ul class="small mb-0">
+                                        <li><strong>Mecánico:</strong> Eliminar hojas minadas</li>
+                                        <li><strong>Preventivo:</strong> Mallas anti-insectos</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Gusanos -->
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border-dark">
+                                <div class="card-header bg-dark text-white">
+                                    <i class="fas fa-caterpillar me-1"></i>Gusanos Cortadores
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title"><i class="fas fa-eye me-1"></i>Identificación:</h6>
+                                    <p class="card-text small">Larvas de lepidópteros. Cortan tallos jóvenes o perforan frutos.</p>
+                                    <h6><i class="fas fa-exclamation-triangle me-1"></i>Daños:</h6>
+                                    <ul class="small mb-2">
+                                        <li>Plantulas cortadas a nivel del suelo</li>
+                                        <li>Frutos con galerías</li>
+                                    </ul>
+                                    <h6><i class="fas fa-shield-alt me-1"></i>Control:</h6>
+                                    <ul class="small mb-0">
+                                        <li><strong>Biológico:</strong> <em>Bacillus thuringiensis</em> (Bt)</li>
+                                        <li><strong>Mecánico:</strong> Revisión manual</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning mt-4">
+                        <i class="fas fa-book me-2"></i>
+                        <strong>Enfoque MIP:</strong> Combina monitoreo constante, umbrales de acción y control biológico.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ================= PESTAÑA 4: PREVENCIÓN ================= -->
+            <div class="tab-pane fade" id="prevencion" role="tabpanel" aria-labelledby="prevencion-tab">
+                <div class="container my-4">
+                    <h3 class="text-center mb-5" style="color: var(--primary-color);">
+                        <i class="fas fa-shield-alt me-2"></i>Estrategias de Prevención y Guía de Cultivo
+                    </h3>
+                    <!-- ETAPAS DEL TOMATE -->
+                    <div class="row g-4 mb-5">
+                        <h5 class="w-100 text-center fw-bold mb-3">📅 Etapas de Desarrollo del Tomate</h5>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border-0 shadow">
+                                <div class="card-body text-center">
+                                    <h6 class="fw-bold mb-2" style="color: var(--info-color);">🌱 Semilla/Plántula</h6>
+                                    <small class="text-muted">Días 0-20</small>
+                                    <hr>
+                                    <p class="small">
+                                        <strong>Características:</strong> Germinación, primeras hojas<br>
+                                        <strong>TDS:</strong> 0-400 ppm<br>
+                                        <strong>EC:</strong> 0.5-1.5 mS/cm<br>
+                                        <strong>Luz:</strong> 14-16 h/día
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border-0 shadow">
+                                <div class="card-body text-center">
+                                    <h6 class="fw-bold mb-2" style="color: var(--success-color);">🌿 Vegetativa</h6>
+                                    <small class="text-muted">Días 21-40</small>
+                                    <hr>
+                                    <p class="small">
+                                        <strong>Características:</strong> Ramificación, crecimiento<br>
+                                        <strong>TDS:</strong> 400-800 ppm<br>
+                                        <strong>EC:</strong> 1.2-2.2 mS/cm<br>
+                                        <strong>Temperatura:</strong> 20-28°C
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border-0 shadow">
+                                <div class="card-body text-center">
+                                    <h6 class="fw-bold mb-2" style="color: var(--warning-color);">🌸 Floración</h6>
+                                    <small class="text-muted">Días 41-70</small>
+                                    <hr>
+                                    <p class="small">
+                                        <strong>Características:</strong> Flores, primeros frutos<br>
+                                        <strong>TDS:</strong> 800-1100 ppm<br>
+                                        <strong>EC:</strong> 2.0-2.8 mS/cm<br>
+                                        <strong>Humedad:</strong> 50-70%
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3">
+                            <div class="card h-100 border-0 shadow">
+                                <div class="card-body text-center">
+                                    <h6 class="fw-bold mb-2" style="color: var(--primary-color);">🍅 Producción</h6>
+                                    <small class="text-muted">Días 71-120</small>
+                                    <hr>
+                                    <p class="small">
+                                        <strong>Características:</strong> Cosecha, maduración<br>
+                                        <strong>TDS:</strong> 1000-1200 ppm<br>
+                                        <strong>EC:</strong> 2.5-3.0 mS/cm<br>
+                                        <strong>Luz:</strong> 14-16 h/día
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-4">
+                        <!-- Columna 1 -->
+                        <div class="col-lg-6">
+                            <div class="card h-100 border-0 shadow" style="border-left: 5px solid var(--info-color);">
+                                <div class="card-header text-white" style="background: var(--info-color) !important;">
+                                    <i class="fas fa-cogs me-1"></i>Manejo del Sistema Hidropónico
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="fw-bold"><i class="fas fa-tint me-1"></i>Calidad del Agua<span class="badge bg-danger ms-2">Crítico</span></h6>
+                                    <ul class="small mb-3">
+                                        <li><strong>pH:</strong> 5.5-6.5 para disponibilidad óptima</li>
+                                        <li><strong>EC:</strong> Ajustar según etapa fenológica</li>
+                                        <li><strong>Oxígeno:</strong> >6 ppm mediante aireadores</li>
+                                        <li><strong>Temp:</strong> 18-24°C para inhibir hongos</li>
+                                    </ul>
+                                    <h6 class="fw-bold"><i class="fas fa-broom me-1"></i>Higiene<span class="badge bg-success ms-2">Preventivo</span></h6>
+                                    <ul class="small mb-0">
+                                        <li>Desinfectar tanques entre ciclos</li>
+                                        <li>Usar calzado exclusivo dentro del invernadero</li>
+                                        <li>Limpiar herramientas con alcohol 70% diariamente</li>
+                                        <li>Cambiar ropa antes de entrar al cultivo</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Columna 2 -->
+                        <div class="col-lg-6">
+                            <div class="card h-100 border-0 shadow" style="border-left: 5px solid var(--success-color);">
+                                <div class="card-header text-white" style="background: var(--success-color) !important;">
+                                    <i class="fas fa-seedling me-1"></i>Manejo Agronómico
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="fw-bold"><i class="fas fa-sun me-1"></i>Ambiente<span class="badge bg-warning ms-2">Monitoreo</span></h6>
+                                    <ul class="small mb-3">
+                                        <li><strong>Ventilación:</strong> 30-60 renovaciones/hora</li>
+                                        <li><strong>Humedad:</strong> 50-70% relativo (evitar >80%)</li>
+                                        <li><strong>Luz:</strong> 14-16 h/día para vegetativo</li>
+                                        <li><strong>Temperatura:</strong> Noche 14-16°C, Día 22-26°C</li>
+                                    </ul>
+                                    <h6 class="fw-bold"><i class="fas fa-user-graduate me-1"></i>Prácticas<span class="badge bg-info ms-2">Semanal</span></h6>
+                                    <ul class="small mb-0">
+                                        <li><strong>Desbrote:</strong> Semanalmente (brotes auxiliares)</li>
+                                        <li><strong>Tutorado:</strong> Guiar tallos verticalmente</li>
+                                        <li><strong>Poda:</strong> Retirar 2-3 hojas bajo racimos listos</li>
+                                        <li><strong>Aclareo:</strong> Máximo 3-4 frutos por racimo</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Columna 3 -->
+                        <div class="col-lg-6">
+                            <div class="card h-100 border-0 shadow" style="border-left: 5px solid var(--primary-color);">
+                                <div class="card-header text-white" style="background: var(--primary-color) !important;">
+                                    <i class="fas fa-heartbeat me-1"></i>Control Integrado de Plagas (MIP)
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="fw-bold"><i class="fas fa-magnifying-glass me-1"></i>Monitoreo Preventivo</h6>
+                                    <ul class="small mb-3">
+                                        <li>Inspecciones 3 veces/semana en envés de hojas</li>
+                                        <li>Trampas cromáticas (amarillas y azules)</li>
+                                        <li>Registrar insectos capturados y umbral de acción</li>
+                                    </ul>
+                                    <h6 class="fw-bold"><i class="fas fa-leaf me-1"></i>Preparación Biológica</h6>
+                                    <ul class="small mb-0">
+                                        <li>Introducir <em>Phytoseiulus persimilis</em> preventivamente</li>
+                                        <li>Usar bacillus thuringiensis (Bt) antes de infestación</li>
+                                        <li>Evitar insecticidas químicos en primeros 30 días</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Columna 4 -->
+                        <div class="col-lg-6">
+                            <div class="card h-100 border-0 shadow" style="border-left: 5px solid var(--warning-color);">
+                                <div class="card-header text-white" style="background: var(--warning-color) !important;">
+                                    <i class="fas fa-clipboard-list me-1"></i>Monitoreo y Registro
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <h6><i class="fas fa-chart-line me-1"></i>Indicadores Diarios</h6>
+                                            <small>pH, EC, TDS, Temperatura, Humedad, Nivel de agua</small>
+                                        </div>
+                                        <div class="col-12">
+                                            <h6><i class="fas fa-search me-1"></i>Inspección Semanal</h6>
+                                            <small>Plagas/enfermedades, Altura de planta, Color de hojas, Sanidad de frutas</small>
+                                        </div>
+                                        <div class="col-12">
+                                            <h6><i class="fas fa-book me-1"></i>Bitácora Obligatoria</h6>
+                                            <small><strong class="text-danger">Registre cada intervención:</strong> Fecha, hora, observación, acción y resultado</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ===== MODAL CONFIGURACIÓN DE REPORTE ===== -->
+    <div class="modal fade" id="modalConfigReporte" tabindex="-1"
+        aria-labelledby="modalConfigReporteLabel" aria-hidden="true"
+        data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalConfigReporteLabel">
+                        <i class="fas fa-file-signature me-2"></i>Configurar Reporte
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal" aria-label="Cerrar" id="btnCerrarModal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-4">
+                        <i class="fas fa-info-circle me-1"></i>Complete los datos para generar el informe técnico
+                    </p>
+                    <form id="formReporte" novalidate>
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <label for="nombreResponsable" class="form-label required-field">
+                                    <i class="fas fa-user me-2"></i>Nombre del Responsable
+                                </label>
+                                <input type="text" class="form-control" id="nombreResponsable"
+                                    placeholder="Juan Pérez García"
+                                    pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ\s\.]+$"
+                                    title="Solo se permiten letras, espacios y puntos."
+                                    maxlength="35"
+                                    oninput="this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s\.]/g, '').slice(0,35);"
+                                    required>
+                                <div class="invalid-feedback">
+                                    <i class="fas fa-exclamation-circle me-1"></i>
+                                    Ingrese un nombre válido (solo letras, máx. 35 caracteres).
+                                </div>
+                                <small class="form-text">
+                                    <i class="fas fa-keyboard me-1"></i>
+                                    <span id="nombreCount">0</span>/35 caracteres
+                                </small>
+                            </div>
+                            <div class="col-md-6 col-sm-6">
+                                <label for="semestre" class="form-label required-field">
+                                    <i class="fas fa-book me-2"></i>Semestre
+                                </label>
+                                <input type="text" class="form-control" id="semestre"
+                                    placeholder="5" pattern="^[1-9]$"
+                                    title="Número del 1 al 9" maxlength="1" inputmode="numeric"
+                                    oninput="this.value = this.value.replace(/[^1-9]/g, '').slice(0,1)"
+                                    required>
+                                <div class="invalid-feedback">
+                                    <i class="fas fa-exclamation-circle me-1"></i>Número del 1 al 9
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-sm-6">
+                                <label for="paralelo" class="form-label required-field">
+                                    <i class="fas fa-users me-2"></i>Paralelo
+                                </label>
+                                <input type="text" class="form-control" id="paralelo"
+                                    placeholder="A" pattern="^[A-Za-z]$"
+                                    title="Una sola letra (A-Z)" maxlength="1"
+                                    oninput="this.value = this.value.replace(/[^A-Za-z]/g, '').toUpperCase()"
+                                    required>
+                                <div class="invalid-feedback">
+                                    <i class="fas fa-exclamation-circle me-1"></i>Una sola letra (A-Z)
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label for="observacionesTecnicas" class="form-label">
+                                    <i class="fas fa-clipboard-list me-2"></i>
+                                    Observaciones Técnicas <span class="text-muted small">(Opcional)</span>
+                                </label>
+                                <textarea class="form-control" id="observacionesTecnicas"
+                                    placeholder="Ej: Revisar bomba de agua | Cambiar solución nutritiva | Ajustar pH..."
+                                    maxlength="500"
+                                    oninput="this.value = this.value.slice(0,500);"></textarea>
+                                <small class="form-text">
+                                    <i class="fas fa-keyboard me-1"></i>
+                                    <span id="obsCount">0</span>/500 caracteres
+                                </small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" 
+                        style="border-width: 2px; font-weight: 600;">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="confirmarYDescargarPDF()" 
+                        style="font-weight: 600; padding: 0.7rem 1.8rem;">
+                        <i class="fas fa-download me-2"></i>Descargar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jsPDF library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

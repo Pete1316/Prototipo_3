@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sensores en Tiempo Real</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#3b82f6" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .subtitle {
+      color: #64748b;
+    }
+
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .sensor-item {
+      background: white;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    .icon-label {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .value-wrapper {
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+
+    /* BLOQUES UNIFICADOS */
+    .ph-box {
+      background: white;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .ph-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .ph-status {
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    .ph-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+
+    .ph-acid { background:#fde68a; }
+    .ph-ideal { background:#bbf7d0; }
+    .ph-alkaline { background:#fecaca; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 8px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    th {
+      background: #f8fafc;
+    }
+
+    .highlight {
+      background: #bbf7d0 !important;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <header>
+    <h1>Carrera de Agropecuaria</h1>
+    <p class="subtitle">Parámetros Hidropónicos</p>
+  </header>
+
+  <!-- BLOQUE PH -->
+  <div class="ph-box">
+    <div class="ph-header">
+      <span id="phStatus" class="ph-status">--</span>
+      <span id="phValue" class="ph-value">--</span>
+    </div>
+
+    <table id="phTable">
+      <thead>
+        <tr>
+          <th>pH</th>
+          <th>Fase</th>
+          <th>Característica</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-min="0" data-max="4.0">
+          <td>&lt; 4.0</td>
+          <td>Anormal</td>
+          <td>Ácido extremo</td>
+        </tr>
+        <tr data-min="4.0" data-max="4.2">
+          <td>4.0 – 4.2</td>
+          <td>Inicio</td>
+          <td>Muy ácido</td>
+        </tr>
+        <tr data-min="4.2" data-max="4.4">
+          <td>4.2 – 4.4</td>
+          <td>Transición</td>
+          <td>Acidez alta</td>
+        </tr>
+        <tr data-min="4.4" data-max="4.7">
+          <td>4.5 – 4.6</td>
+          <td>Maduro</td>
+          <td>Equilibrado</td>
+        </tr>
+        <tr data-min="4.7" data-max="5.0">
+          <td>4.8 – 5.0</td>
+          <td>Final</td>
+          <td>Poco ácido</td>
+        </tr>
+        <tr data-min="5.0" data-max="20">
+          <td>&gt; 5.0</td>
+          <td>Sobremaduro</td>
+          <td>Muy dulce</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- BLOQUE EC -->
+  <div class="ph-box">
+    <div class="ph-header">
+      <span id="ecStatus" class="ph-status">--</span>
+      <span id="ecValue" class="ph-value">--</span>
+    </div>
+
+    <table id="ecTable">
+      <thead>
+        <tr>
+          <th>EC (mS/cm)</th>
+          <th>Fase</th>
+          <th>Estado nutricional</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-min="0" data-max="1.0">
+          <td>&lt; 1.0</td>
+          <td>Deficiente</td>
+          <td>Nutrientes muy bajos</td>
+        </tr>
+        <tr data-min="1.0" data-max="2.0">
+          <td>1.0 – 2.0</td>
+          <td>Crecimiento</td>
+          <td>Nivel adecuado</td>
+        </tr>
+        <tr data-min="2.0" data-max="3.5">
+          <td>2.0 – 3.5</td>
+          <td>Producción</td>
+          <td>Nivel óptimo</td>
+        </tr>
+        <tr data-min="3.5" data-max="5.0">
+          <td>3.5 – 5.0</td>
+          <td>Exceso</td>
+          <td>Alta concentración</td>
+        </tr>
+        <tr data-min="5.0" data-max="20">
+          <td>&gt; 5.0</td>
+          <td>Peligro</td>
+          <td>Riesgo para la planta</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SENSORES -->
+  <div class="sensor-grid">
+    <div class="sensor-item">
+      <div class="icon-label"><i class="fas fa-water"></i> Temp. Agua</div>
+      <div class="value-wrapper"><span id="waterTemp">--</span> °C</div>
+    </div>
+
+    <div class="sensor-item">
+      <div class="icon-label"><i class="fas fa-thermometer-half"></i> Temp. Ambiente</div>
+      <div class="value-wrapper"><span id="dhtTemp">--</span> °C</div>
+    </div>
+
+    <div class="sensor-item">
+      <div class="icon-label"><i class="fas fa-tint"></i> Humedad</div>
+      <div class="value-wrapper"><span id="hum">--</span> %</div>
+    </div>
+
+    <div class="sensor-item">
+      <div class="icon-label"><i class="fas fa-filter"></i> TDS</div>
+      <div class="value-wrapper"><span id="tds">--</span> ppm</div>
+    </div>
+
+    <div class="sensor-item">
+      <div class="icon-label"><i class="fas fa-ruler-vertical"></i> Nivel</div>
+      <div class="value-wrapper"><span id="nivel">--</span> cm</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBXAal12oFlxKZ81PlaDNnar_y2-DiZRlU",
+  authDomain: "esp32-a7ac9.firebaseapp.com",
+  databaseURL: "https://esp32-a7ac9-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "esp32-a7ac9",
+  storageBucket: "esp32-a7ac9.firebasestorage.app",
+  messagingSenderId: "312730525959",
+  appId: "1:312730525959:web:dae44f28a4149dcee165a2"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const sensoresRef = ref(db, "sensores");
+
+function actualizarTabla(valor, tablaId, statusId, valueId, rangos) {
+  const filas = document.querySelectorAll(`#${tablaId} tbody tr`);
+  const status = document.getElementById(statusId);
+  const value = document.getElementById(valueId);
+
+  value.textContent = valor.toFixed(2);
+
+  filas.forEach(fila => {
+    fila.classList.remove("highlight");
+    const min = parseFloat(fila.dataset.min);
+    const max = parseFloat(fila.dataset.max);
+
+    if (valor >= min && valor < max) {
+      fila.classList.add("highlight");
+      status.textContent = fila.cells[2].textContent;
+    }
+  });
+}
+
+onValue(sensoresRef, (snapshot) => {
+  const d = snapshot.val();
+  if (!d) return;
+
+  const update = (id, val, dec = 1) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = (val != null && !isNaN(val)) ? Number(val).toFixed(dec) : "--";
+  };
+
+  update("waterTemp", d.waterTemp);
+  update("dhtTemp", d.dhtTemp);
+  update("hum", d.hum);
+  update("tds", d.tds, 0);
+  update("nivel", d.nivel, 0);
+
+  const phNum = parseFloat(d.ph);
+  if (!isNaN(phNum)) {
+    actualizarTabla(phNum, "phTable", "phStatus", "phValue");
+  }
+
+  const ecNum = parseFloat(d.ec);
+  if (!isNaN(ecNum)) {
+    actualizarTabla(ecNum, "ecTable", "ecStatus", "ecValue");
+  }
+});
+</script>
+
+</body>
+</html>

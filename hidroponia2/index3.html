@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lectura Firebase</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .card {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .metric-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #0d6efd;
+    }
+    .metric-label {
+      color: #6c757d;
+    }
+  </style>
+</head>
+<body class="py-5">
+
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="text-primary">📊 Datos en Tiempo Real desde Firebase</h2>
+      <p class="text-muted">Actualización automática desde sensores ESP32</p>
+    </div>
+
+    <div class="row g-4">
+      <!-- Temperatura Agua -->
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title metric-label">Temperatura Agua</h5>
+            <p class="card-text metric-value" id="waterTemp">--</p>
+            <small class="text-muted">°C</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Temperatura Ambiente -->
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title metric-label">Temperatura Ambiente</h5>
+            <p class="card-text metric-value" id="dhtTemp">--</p>
+            <small class="text-muted">°C</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Humedad -->
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title metric-label">Humedad</h5>
+            <p class="card-text metric-value" id="hum">--</p>
+            <small class="text-muted">%</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- pH -->
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title metric-label">pH</h5>
+            <p class="card-text metric-value" id="ph">--</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TDS -->
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title metric-label">TDS</h5>
+            <p class="card-text metric-value" id="tds">--</p>
+            <small class="text-muted">ppm</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- EC -->
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title metric-label">EC</h5>
+            <p class="card-text metric-value" id="ec">--</p>
+            <small class="text-muted">mS/cm</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nivel -->
+      <div class="col-md-6 col-lg-4 offset-lg-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title metric-label">Nivel</h5>
+            <p class="card-text metric-value" id="nivel">--</p>
+            <small class="text-muted">cm</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔥 Firebase SDK + Lógica -->
+  <script type="module">
+    console.log("JS cargado ✔");
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXAal12oFlxKZ81PlaDNnar_y2-DiZRlU",
+      authDomain: "esp32-a7ac9.firebaseapp.com",
+      databaseURL: "https://esp32-a7ac9-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "esp32-a7ac9",
+      storageBucket: "esp32-a7ac9.firebasestorage.app",
+      messagingSenderId: "312730525959",
+      appId: "1:312730525959:web:dae44f28a4149dcee165a2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const sensoresRef = ref(db, "sensores");
+
+    onValue(sensoresRef, (snapshot) => {
+      const d = snapshot.val();
+      console.log("Datos recibidos:", d);
+
+      if (!d) return;
+
+      document.getElementById("waterTemp").innerText = d.waterTemp ?? "--";
+      document.getElementById("dhtTemp").innerText   = d.dhtTemp ?? "--";
+      document.getElementById("hum").innerText       = d.hum ?? "--";
+      document.getElementById("ph").innerText        = d.ph ?? "--";
+      document.getElementById("tds").innerText       = d.tds ?? "--";
+      document.getElementById("ec").innerText        = d.ec ?? "--";
+      document.getElementById("nivel").innerText     = d.nivel ?? "--";
+    });
+  </script>
+
+</body>
+</html>
